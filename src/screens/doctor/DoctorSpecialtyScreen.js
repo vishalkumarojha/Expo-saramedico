@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, TextInput, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity 
+import {
+  View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomButton } from '../../components/CustomComponents';
@@ -9,7 +10,7 @@ import { CustomButton } from '../../components/CustomComponents';
 const SPECIALTIES = [
   { id: 'derm', name: 'Dermatology', icon: 'water' },
   { id: 'card', name: 'Cardiology', icon: 'heart' },
-  { id: 'neur', name: 'Neurology', icon: 'brain' }, // Using 'brain' or similar if available, else generic
+  { id: 'neur', name: 'Neurology', icon: 'fitness' }, // Neurology specialty icon
   { id: 'radi', name: 'Radiology', icon: 'man' },
   { id: 'pedi', name: 'Pediatrics', icon: 'happy' },
 ];
@@ -24,7 +25,7 @@ export default function DoctorSpecialtyScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* Header: Back + Progress Bar */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -40,57 +41,57 @@ export default function DoctorSpecialtyScreen({ navigation }) {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-           <Ionicons name="search-outline" size={20} color="#999" />
-           <TextInput 
-             placeholder="Search speciality (e.g. Neurology)" 
-             placeholderTextColor="#999" 
-             style={styles.input} 
-           />
+          <Ionicons name="search-outline" size={20} color="#999" />
+          <TextInput
+            placeholder="Search speciality (e.g. Neurology)"
+            placeholderTextColor="#999"
+            style={styles.input}
+          />
         </View>
 
         {/* Most Common Chips */}
         <Text style={styles.sectionLabel}>Most Common</Text>
         <View style={styles.chipRow}>
-           <TouchableOpacity style={styles.chip}><Text style={styles.chipText}>General Physician</Text></TouchableOpacity>
-           <TouchableOpacity style={[styles.chip, styles.chipActive]}><Text style={styles.chipTextActive}>Cardiology</Text></TouchableOpacity>
-           <TouchableOpacity style={styles.chip}><Text style={styles.chipText}>Pediatrics</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.chip}><Text style={styles.chipText}>General Physician</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.chip, styles.chipActive]}><Text style={styles.chipTextActive}>Cardiology</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.chip}><Text style={styles.chipText}>Pediatrics</Text></TouchableOpacity>
         </View>
 
         {/* All Specialties List */}
         <Text style={styles.sectionLabel}>All Specialties</Text>
-        <ScrollView showsVerticalScrollIndicator={false} style={{flex: 1}}>
-           {SPECIALTIES.map((item) => {
-             const isSelected = selectedId === item.id;
-             return (
-               <TouchableOpacity 
-                 key={item.id} 
-                 style={[styles.card, isSelected && styles.cardActive]}
-                 onPress={() => setSelectedId(item.id)}
-                 activeOpacity={0.9}
-               >
-                 <View style={styles.cardLeft}>
-                    <View style={styles.iconBox}>
-                       <Ionicons name={item.icon} size={20} color="#555" />
-                    </View>
-                    <Text style={[styles.cardTitle, isSelected && styles.cardTitleActive]}>{item.name}</Text>
-                 </View>
-                 
-                 {/* Radio Button Logic */}
-                 <View style={[styles.radioOuter, isSelected && styles.radioOuterActive]}>
-                    {isSelected && <View style={styles.radioInner} />}
-                 </View>
-               </TouchableOpacity>
-             );
-           })}
-           <View style={{height: 100}} /> 
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+          {SPECIALTIES.map((item) => {
+            const isSelected = selectedId === item.id;
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.card, isSelected && styles.cardActive]}
+                onPress={() => setSelectedId(item.id)}
+                activeOpacity={0.9}
+              >
+                <View style={styles.cardLeft}>
+                  <View style={styles.iconBox}>
+                    <Ionicons name={item.icon} size={20} color="#555" />
+                  </View>
+                  <Text style={[styles.cardTitle, isSelected && styles.cardTitleActive]}>{item.name}</Text>
+                </View>
+
+                {/* Radio Button Logic */}
+                <View style={[styles.radioOuter, isSelected && styles.radioOuterActive]}>
+                  {isSelected && <View style={styles.radioInner} />}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          <View style={{ height: 100 }} />
         </ScrollView>
 
         {/* Footer */}
         <View style={styles.footer}>
-           <CustomButton title="Continue" onPress={handleContinue} />
-           <TouchableOpacity style={{alignItems: 'center', marginTop: 15}}>
-              <Text style={{color: '#999', fontSize: 13}}>I don't see my speciality</Text>
-           </TouchableOpacity>
+          <CustomButton title="Continue" onPress={handleContinue} />
+          <TouchableOpacity style={{ alignItems: 'center', marginTop: 15 }}>
+            <Text style={{ color: '#999', fontSize: 13 }}>I don't see my speciality</Text>
+          </TouchableOpacity>
         </View>
 
       </View>
@@ -101,7 +102,7 @@ export default function DoctorSpecialtyScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
   content: { flex: 1, padding: 25 },
-  
+
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
   progressBarTrack: { flex: 1, height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, marginLeft: 20 },
   progressBarFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 3 },

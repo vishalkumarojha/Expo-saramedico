@@ -1,22 +1,23 @@
 import React from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity 
+import {
+  View, Text, StyleSheet, TouchableOpacity
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomButton } from '../../components/CustomComponents';
 
 export default function DoctorMicrophoneTestScreen({ navigation }) {
-  
+
   const handleNextStep = () => {
     // Navigate to Step 3: Upload Documents
-    navigation.navigate('DoctorUploadScreen'); 
+    navigation.navigate('DoctorUploadScreen');
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* Header: Back + Progress Bar (Step 2/4) */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -32,22 +33,22 @@ export default function DoctorMicrophoneTestScreen({ navigation }) {
 
         {/* Mic Visualizer Area */}
         <View style={styles.micContainer}>
-            <View style={styles.micCircleOuter}>
-                <View style={styles.micCircleInner}>
-                    <Ionicons name="mic" size={40} color="white" />
-                </View>
+          <View style={styles.micCircleOuter}>
+            <View style={styles.micCircleInner}>
+              <Ionicons name="mic" size={40} color="white" />
             </View>
+          </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-           <CustomButton title="Start Test" onPress={handleNextStep} />
-           <TouchableOpacity 
-             style={{alignItems: 'center', marginTop: 15}}
-             onPress={handleNextStep}
-           >
-              <Text style={{color: '#999', fontSize: 13}}>Skip for now</Text>
-           </TouchableOpacity>
+          <CustomButton title="Start Test" onPress={handleNextStep} />
+          <TouchableOpacity
+            style={{ alignItems: 'center', marginTop: 15 }}
+            onPress={handleNextStep}
+          >
+            <Text style={{ color: '#999', fontSize: 13 }}>Skip for now</Text>
+          </TouchableOpacity>
         </View>
 
       </View>
@@ -58,7 +59,7 @@ export default function DoctorMicrophoneTestScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
   content: { flex: 1, padding: 25 },
-  
+
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 40 },
   progressBarTrack: { flex: 1, height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, marginLeft: 20 },
   progressBarFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 3 },

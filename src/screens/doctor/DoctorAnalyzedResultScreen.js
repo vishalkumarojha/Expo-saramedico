@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, TextInput, Image 
+import {
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomButton } from '../../components/CustomComponents';
@@ -12,46 +13,46 @@ export default function DoctorAnalyzedResultScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* Header */}
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-               <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Analyzed Document</Text>
-            <View style={{width: 24}} /> 
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Analyzed Document</Text>
+          <View style={{ width: 24 }} />
         </View>
 
         {/* Document Preview (Mock) */}
         <View style={styles.docPreview}>
-           <Text style={styles.docHeader}>MEDICAL REPORT</Text>
-           <View style={styles.docLine} />
-           <Text style={styles.docText}><Text style={{fontWeight:'bold'}}>PATIENT:</Text> John Doe (ID: 4520)</Text>
-           <Text style={styles.docText}><Text style={{fontWeight:'bold'}}>EXAM:</Text> MRI LEFT KNEE</Text>
-           <Text style={styles.docText}><Text style={{fontWeight:'bold'}}>FINDINGS:</Text>{'\n'}The medial meniscus demonstrates a complex tear involving the posterior horn.</Text>
-           <View style={styles.highlight}><Text style={styles.highlightText}>There is moderate joint effusion present. The anterior cruciate ligament appears intact.</Text></View>
+          <Text style={styles.docHeader}>MEDICAL REPORT</Text>
+          <View style={styles.docLine} />
+          <Text style={styles.docText}><Text style={{ fontWeight: 'bold' }}>PATIENT:</Text> John Doe (ID: 4520)</Text>
+          <Text style={styles.docText}><Text style={{ fontWeight: 'bold' }}>EXAM:</Text> MRI LEFT KNEE</Text>
+          <Text style={styles.docText}><Text style={{ fontWeight: 'bold' }}>FINDINGS:</Text>{'\n'}The medial meniscus demonstrates a complex tear involving the posterior horn.</Text>
+          <View style={styles.highlight}><Text style={styles.highlightText}>There is moderate joint effusion present. The anterior cruciate ligament appears intact.</Text></View>
         </View>
 
         {/* Tab Switcher */}
         <View style={styles.tabContainer}>
-           <TouchableOpacity 
-             style={[styles.tab, activeTab === 'Timeline' && styles.activeTab]}
-             onPress={() => setActiveTab('Timeline')}
-           >
-              <Text style={[styles.tabText, activeTab === 'Timeline' && styles.activeTabText]}>Timeline</Text>
-           </TouchableOpacity>
-           
-           <TouchableOpacity 
-             style={[styles.tab, activeTab === 'Chat' && styles.activeTab]}
-             onPress={() => setActiveTab('Chat')}
-           >
-              <Text style={[styles.tabText, activeTab === 'Chat' && styles.activeTabText]}>Chat</Text>
-           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Timeline' && styles.activeTab]}
+            onPress={() => setActiveTab('Timeline')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Timeline' && styles.activeTabText]}>Timeline</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Chat' && styles.activeTab]}
+            onPress={() => setActiveTab('Chat')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Chat' && styles.activeTabText]}>Chat</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Tab Content */}
         <View style={styles.tabContent}>
-           {activeTab === 'Timeline' ? <TimelineView /> : <ChatView navigation={navigation} />}
+          {activeTab === 'Timeline' ? <TimelineView /> : <ChatView navigation={navigation} />}
         </View>
 
       </View>
@@ -69,55 +70,55 @@ function TimelineView() {
   ];
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} style={{paddingTop: 10}}>
-       {events.map((e, i) => (
-         <View key={i} style={styles.timelineItem}>
-            {/* Timeline Line */}
-            <View style={styles.timelineLeft}>
-               <View style={styles.dot} />
-               {i !== events.length - 1 && <View style={styles.line} />}
-            </View>
-            
-            {/* Content Card */}
-            <View style={styles.timelineCard}>
-               <Text style={styles.timeDate}>{e.date}</Text>
-               <Text style={styles.timeTitle}>{e.title}</Text>
-               <Text style={styles.timeDesc}>{e.desc}</Text>
-            </View>
-         </View>
-       ))}
-       <View style={{height: 20}} />
+    <ScrollView showsVerticalScrollIndicator={false} style={{ paddingTop: 10 }}>
+      {events.map((e, i) => (
+        <View key={i} style={styles.timelineItem}>
+          {/* Timeline Line */}
+          <View style={styles.timelineLeft}>
+            <View style={styles.dot} />
+            {i !== events.length - 1 && <View style={styles.line} />}
+          </View>
+
+          {/* Content Card */}
+          <View style={styles.timelineCard}>
+            <Text style={styles.timeDate}>{e.date}</Text>
+            <Text style={styles.timeTitle}>{e.title}</Text>
+            <Text style={styles.timeDesc}>{e.desc}</Text>
+          </View>
+        </View>
+      ))}
+      <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
 
 function ChatView({ navigation }) {
   return (
-    <View style={{flex: 1}}>
-       <ScrollView style={{flex: 1}} showsVerticalScrollIndicator={false}>
-          {/* AI Message */}
-          <View style={styles.aiMsg}>
-             <Text style={styles.aiText}>I've analyzed the patient's radiology report. I can help you identify key findings, extracting dates, or summarizing the diagnosis.</Text>
-          </View>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {/* AI Message */}
+        <View style={styles.aiMsg}>
+          <Text style={styles.aiText}>I've analyzed the patient's radiology report. I can help you identify key findings, extracting dates, or summarizing the diagnosis.</Text>
+        </View>
 
-          {/* User Suggestion Chip */}
-          <View style={{alignItems: 'flex-end', marginTop: 10}}>
-             <TouchableOpacity style={styles.suggestionChip}>
-                <Text style={styles.suggestionText}>What does the Patient go through?</Text>
-             </TouchableOpacity>
-          </View>
-       </ScrollView>
+        {/* User Suggestion Chip */}
+        <View style={{ alignItems: 'flex-end', marginTop: 10 }}>
+          <TouchableOpacity style={styles.suggestionChip}>
+            <Text style={styles.suggestionText}>What does the Patient go through?</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
-       {/* Chat Input */}
-       <View style={styles.chatInputRow}>
-           <TouchableOpacity>
-             <Ionicons name="add-circle-outline" size={24} color="#999" />
-           </TouchableOpacity>
-           <TextInput placeholder="Ask anything about the document..." style={styles.chatInput} />
-           <TouchableOpacity style={styles.sendBtn} onPress={() => navigation.navigate('DoctorDashboard')}>
-             <Ionicons name="send" size={18} color="white" />
-           </TouchableOpacity>
-       </View>
+      {/* Chat Input */}
+      <View style={styles.chatInputRow}>
+        <TouchableOpacity>
+          <Ionicons name="add-circle-outline" size={24} color="#999" />
+        </TouchableOpacity>
+        <TextInput placeholder="Ask anything about the document..." style={styles.chatInput} />
+        <TouchableOpacity style={styles.sendBtn} onPress={() => navigation.navigate('DoctorDashboard')}>
+          <Ionicons name="send" size={18} color="white" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   aiText: { fontSize: 14, color: '#333', lineHeight: 20 },
   suggestionChip: { backgroundColor: COLORS.primary, paddingHorizontal: 15, paddingVertical: 10, borderRadius: 20 },
   suggestionText: { color: 'white', fontSize: 13, fontWeight: '500' },
-  
+
   chatInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingVertical: 5 },
   chatInput: { flex: 1, backgroundColor: 'white', borderRadius: 20, borderWidth: 1, borderColor: '#EEE', paddingHorizontal: 15, height: 45, marginHorizontal: 10 },
   sendBtn: { width: 45, height: 45, borderRadius: 12, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' }

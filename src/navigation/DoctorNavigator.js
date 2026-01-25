@@ -31,25 +31,25 @@ const Stack = createStackNavigator();
 
 export default function DoctorNavigator() {
   return (
-    <Stack.Navigator 
-      initialRouteName="DoctorFlow" // Maps to SpecialtyScreen
+    <Stack.Navigator
+      initialRouteName="DoctorSpecialty" // Maps to SpecialtyScreen
       screenOptions={{
         headerShown: false,
-        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS, 
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
       {/* 1. Onboarding Flow */}
-      <Stack.Screen name="DoctorFlow" component={DoctorSpecialtyScreen} />
+      <Stack.Screen name="DoctorSpecialty" component={DoctorSpecialtyScreen} />
       <Stack.Screen name="DoctorSpecialtyScreen" component={DoctorSpecialtyScreen} />
       <Stack.Screen name="DoctorMicrophoneTestScreen" component={DoctorMicrophoneTestScreen} />
       <Stack.Screen name="DoctorUploadScreen" component={DoctorUploadScreen} />
       <Stack.Screen name="DoctorAnalyzedScreen" component={DoctorAnalyzedScreen} />
-      
+
       {/* 2. Main Dashboard */}
       <Stack.Screen name="DoctorDashboard" component={DoctorDashboard} />
       <Stack.Screen name="DoctorSearchScreen" component={DoctorSearchScreen} />
       <Stack.Screen name="DoctorSettingsScreen" component={DoctorSettingsScreen} />
-      
+
       {/* 3. Patient Management */}
       <Stack.Screen name="DoctorPatientDirectoryScreen" component={DoctorPatientDirectoryScreen} />
       <Stack.Screen name="DoctorAddPatientScreen" component={DoctorAddPatientScreen} />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Import Modular Navigators
 import AuthNavigator from './src/navigation/AuthNavigator';
@@ -13,32 +14,34 @@ const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator 
-         initialRouteName="Auth"
-         screenOptions={{
-           headerShown: false,
-           // Standard iOS-style slide animation for all screens
-           cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS, 
-           gestureEnabled: true,
-           gestureDirection: 'horizontal',
-         }}
-      >
-        {/* 1. Auth Stack 
-          (Contains Login, SignUp, OTP, ResetPassword) 
-        */}
-        <Stack.Screen name="Auth" component={AuthNavigator} />
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Auth"
+          screenOptions={{
+            headerShown: false,
+            // Standard iOS-style slide animation for all screens
+            cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+          }}
+        >
+          {/* 1. Auth Stack 
+            (Contains Login, SignUp, OTP, ResetPassword) 
+          */}
+          <Stack.Screen name="Auth" component={AuthNavigator} />
 
-        {/* 2. Role-Based Stacks 
-          Note: The 'name' props here (e.g., 'DoctorFlow') match 
-          exactly what you call in LoginScreen: navigation.replace('DoctorFlow')
-        */}
-        <Stack.Screen name="PatientFlow" component={PatientNavigator} />
-        <Stack.Screen name="DoctorFlow" component={DoctorNavigator} />
-        <Stack.Screen name="AdminFlow" component={AdminNavigator} />
-        <Stack.Screen name="HospitalFlow" component={HospitalNavigator} />
+          {/* 2. Role-Based Stacks 
+            Note: The 'name' props here (e.g., 'DoctorFlow') match 
+            exactly what you call in LoginScreen: navigation.replace('DoctorFlow')
+          */}
+          <Stack.Screen name="PatientFlow" component={PatientNavigator} />
+          <Stack.Screen name="DoctorFlow" component={DoctorNavigator} />
+          <Stack.Screen name="AdminFlow" component={AdminNavigator} />
+          <Stack.Screen name="HospitalFlow" component={HospitalNavigator} />
 
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }

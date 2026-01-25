@@ -1,66 +1,67 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity, Image 
+import {
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Image
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 
 export default function DoctorPatientDetailScreen({ route, navigation }) {
   // Get patient data passed from directory
-  const { patient } = route.params || {}; 
+  const { patient } = route.params || {};
   const [activeTab, setActiveTab] = useState('Visits'); // 'Visits' or 'Documents'
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* Header */}
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-               <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Patient Profile</Text>
-            <View style={{width: 24}} /> 
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Patient Profile</Text>
+          <View style={{ width: 24 }} />
         </View>
 
         {/* Profile Info */}
         <View style={styles.profileHeader}>
-           <View style={styles.avatarContainer}>
-              <View style={styles.avatarPlaceholder}>
-                 <Ionicons name="camera" size={30} color="#999" />
-              </View>
-              <View style={styles.editBadge}>
-                 <Ionicons name="pencil" size={12} color="white" />
-              </View>
-           </View>
-           <Text style={styles.patientName}>{patient?.name || 'Sara Shetty'}</Text>
-           <Text style={styles.patientMeta}>35y Female - MRN {patient?.mrn || '89120'}</Text>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="camera" size={30} color="#999" />
+            </View>
+            <View style={styles.editBadge}>
+              <Ionicons name="pencil" size={12} color="white" />
+            </View>
+          </View>
+          <Text style={styles.patientName}>{patient?.name || 'Sara Shetty'}</Text>
+          <Text style={styles.patientMeta}>35y Female - MRN {patient?.mrn || '89120'}</Text>
         </View>
 
         {/* Tab Switcher */}
         <View style={styles.tabContainer}>
-           <TouchableOpacity 
-             style={[styles.tab, activeTab === 'Visits' && styles.activeTab]}
-             onPress={() => setActiveTab('Visits')}
-           >
-              <Text style={[styles.tabText, activeTab === 'Visits' && styles.activeTabText]}>Visits</Text>
-           </TouchableOpacity>
-           
-           <TouchableOpacity 
-             style={[styles.tab, activeTab === 'Documents' && styles.activeTab]}
-             onPress={() => setActiveTab('Documents')}
-           >
-              <Text style={[styles.tabText, activeTab === 'Documents' && styles.activeTabText]}>Documents</Text>
-           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Visits' && styles.activeTab]}
+            onPress={() => setActiveTab('Visits')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Visits' && styles.activeTabText]}>Visits</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Documents' && styles.activeTab]}
+            onPress={() => setActiveTab('Documents')}
+          >
+            <Text style={[styles.tabText, activeTab === 'Documents' && styles.activeTabText]}>Documents</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Tab Content - Navigation passed to VisitsView */}
         <View style={styles.tabContent}>
-           {activeTab === 'Visits' ? (
-             <VisitsView navigation={navigation} /> 
-           ) : (
-             <DocumentsView />
-           )}
+          {activeTab === 'Visits' ? (
+            <VisitsView navigation={navigation} />
+          ) : (
+            <DocumentsView />
+          )}
         </View>
 
       </View>
@@ -73,44 +74,44 @@ export default function DoctorPatientDetailScreen({ route, navigation }) {
 function VisitsView({ navigation }) {
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-       <Text style={styles.sectionLabel}>RECENT HISTORY</Text>
-       
-       {/* Visit Card 1 */}
-       <View style={styles.visitCard}>
-          <View style={styles.visitHeader}>
-             <Text style={styles.visitDate}>OCT 14, 2023 - 2:30 PM</Text>
-             {/* LINKED VIEW BUTTON */}
-             <TouchableOpacity 
-               style={styles.viewBtn} 
-               onPress={() => navigation.navigate('DoctorPostVisitScreen')}
-             >
-                <Text style={styles.viewBtnText}>View</Text>
-             </TouchableOpacity>
-          </View>
-          <Text style={styles.visitTitle}>Cardiology Follow-up</Text>
-          <Text style={styles.visitDesc}>Patient reports reduced palpitations since starting the new routine.</Text>
-          <View style={styles.bulletPoint}><Text style={styles.bulletText}>• BP is unstable</Text></View>
-          <View style={styles.bulletPoint}><Text style={styles.bulletText}>• Frequent Fever</Text></View>
-       </View>
+      <Text style={styles.sectionLabel}>RECENT HISTORY</Text>
 
-       {/* Visit Card 2 */}
-       <View style={styles.visitCard}>
-          <View style={styles.visitHeader}>
-             <Text style={styles.visitDate}>SEPT 12, 2023 - 2:30 PM</Text>
-             {/* LINKED VIEW BUTTON */}
-             <TouchableOpacity 
-               style={styles.viewBtn}
-               onPress={() => navigation.navigate('DoctorPostVisitScreen')}
-             >
-                <Text style={styles.viewBtnText}>View</Text>
-             </TouchableOpacity>
-          </View>
-          <Text style={styles.visitTitle}>General Check-up</Text>
-          <Text style={styles.visitDesc}>Routine Checkup, Patient expressed concerns about knee pain during exercises.</Text>
-          <View style={styles.bulletPoint}><Text style={styles.bulletText}>• High Blood Pressure</Text></View>
-          <View style={styles.bulletPoint}><Text style={styles.bulletText}>• No Fever</Text></View>
-       </View>
-       <View style={{height: 20}} />
+      {/* Visit Card 1 */}
+      <View style={styles.visitCard}>
+        <View style={styles.visitHeader}>
+          <Text style={styles.visitDate}>OCT 14, 2023 - 2:30 PM</Text>
+          {/* LINKED VIEW BUTTON */}
+          <TouchableOpacity
+            style={styles.viewBtn}
+            onPress={() => navigation.navigate('DoctorPostVisitScreen')}
+          >
+            <Text style={styles.viewBtnText}>View</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.visitTitle}>Cardiology Follow-up</Text>
+        <Text style={styles.visitDesc}>Patient reports reduced palpitations since starting the new routine.</Text>
+        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• BP is unstable</Text></View>
+        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• Frequent Fever</Text></View>
+      </View>
+
+      {/* Visit Card 2 */}
+      <View style={styles.visitCard}>
+        <View style={styles.visitHeader}>
+          <Text style={styles.visitDate}>SEPT 12, 2023 - 2:30 PM</Text>
+          {/* LINKED VIEW BUTTON */}
+          <TouchableOpacity
+            style={styles.viewBtn}
+            onPress={() => navigation.navigate('DoctorPostVisitScreen')}
+          >
+            <Text style={styles.viewBtnText}>View</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.visitTitle}>General Check-up</Text>
+        <Text style={styles.visitDesc}>Routine Checkup, Patient expressed concerns about knee pain during exercises.</Text>
+        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• High Blood Pressure</Text></View>
+        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• No Fever</Text></View>
+      </View>
+      <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
@@ -118,34 +119,34 @@ function VisitsView({ navigation }) {
 function DocumentsView() {
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-       <Text style={styles.sectionLabel}>RECENT DOCUMENTS</Text>
-       
-       <DocumentItem 
-         title="Lab_Result_Bloodwork.pdf" 
-         sub="Uploaded Oct 10 - 2.5 MB" 
-       />
-       <DocumentItem 
-         title="Routine_Check.pdf" 
-         sub="Uploaded Sept 14 - 4.4 MB" 
-       />
-       <DocumentItem 
-         title="MRI_Scan_Report.pdf" 
-         sub="Uploaded Aug 20 - 12 MB" 
-       />
+      <Text style={styles.sectionLabel}>RECENT DOCUMENTS</Text>
+
+      <DocumentItem
+        title="Lab_Result_Bloodwork.pdf"
+        sub="Uploaded Oct 10 - 2.5 MB"
+      />
+      <DocumentItem
+        title="Routine_Check.pdf"
+        sub="Uploaded Sept 14 - 4.4 MB"
+      />
+      <DocumentItem
+        title="MRI_Scan_Report.pdf"
+        sub="Uploaded Aug 20 - 12 MB"
+      />
     </ScrollView>
   );
 }
 
 const DocumentItem = ({ title, sub }) => (
   <TouchableOpacity style={styles.docItem}>
-     <View style={styles.pdfIcon}>
-        <Ionicons name="document-text" size={24} color="#E53935" />
-     </View>
-     <View style={{flex: 1}}>
-        <Text style={styles.docTitle}>{title}</Text>
-        <Text style={styles.docSub}>{sub}</Text>
-     </View>
-     <Ionicons name="ellipsis-vertical" size={20} color="#999" />
+    <View style={styles.pdfIcon}>
+      <Ionicons name="document-text" size={24} color="#E53935" />
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.docTitle}>{title}</Text>
+      <Text style={styles.docSub}>{sub}</Text>
+    </View>
+    <Ionicons name="ellipsis-vertical" size={20} color="#999" />
   </TouchableOpacity>
 );
 

@@ -1,206 +1,392 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  SafeAreaView, 
-  TouchableOpacity, 
-  Image 
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import BottomNavBar from '../../components/BottomNavBar';
-
-// --- MOCK DATA FOR DATES ---
-const DATES = [
-  { day: 'Mon', date: '12' },
-  { day: 'Tue', date: '13' },
-  { day: 'Wed', date: '14' },
-  { day: 'Thu', date: '15' },
-  { day: 'Fri', date: '16' },
-  { day: 'Sat', date: '17' },
-];
-
-// --- MOCK DATA FOR APPOINTMENTS (Keyed by Date) ---
-const APPOINTMENTS_DB = {
-  '12': [
-    {
-      id: 'a1', time: '09:00', ampm: 'AM', duration: '30 min',
-      doctor: 'Dr. Emily Chen', type: 'General Checkup', 
-      status: 'CONFIRMED', statusColor: '#E3F2FD', statusText: '#2196F3',
-      img: 'https://i.pravatar.cc/100?img=5'
-    }
-  ],
-  '13': [
-     {
-      id: 'b1', time: '14:00', ampm: 'PM', duration: '45 min',
-      doctor: 'Dr. John Smith', type: 'Dental Cleaning', 
-      status: 'PENDING', statusColor: '#FFF3E0', statusText: '#FF9800',
-      img: 'https://i.pravatar.cc/100?img=11'
-    }
-  ],
-  '14': [
-    {
-      id: 'c1', time: '09:00', ampm: 'AM', duration: '54 min',
-      doctor: 'Sarah Jenkins', type: 'General Consultation', 
-      status: 'CONFIRMED', statusColor: '#E3F2FD', statusText: '#2196F3',
-      img: 'https://i.pravatar.cc/100?img=12'
-    },
-    {
-      id: 'c2', time: '10:00', ampm: 'AM', duration: '54 min',
-      doctor: 'Michael Ross', type: 'Post-Op Follow-Up', 
-      status: 'CHECKED-IN', statusColor: '#E8F5E9', statusText: '#2E7D32',
-      img: 'https://i.pravatar.cc/100?img=33'
-    },
-    // CURRENT TIME INDICATOR WOULD GO HERE LOGICALLY
-    {
-      id: 'c3', time: '11:30', ampm: 'AM', duration: '54 min',
-      doctor: 'Rosevelt de Francis', type: 'Radiology Review', 
-      status: 'CHECKED-IN', statusColor: '#FFF8E1', statusText: '#F9A825',
-      img: 'https://i.pravatar.cc/100?img=14'
-    }
-  ]
-};
+import { patientAPI } from '../../services/api';
+import ErrorHandler from '../../services/errorHandler';
 
 export default function ScheduleScreen({ navigation }) {
-  // 1. STATE: Track selected date (Default to '14' matching the screenshot)
-  const [selectedDate, setSelectedDate] = useState('14');
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 2. HELPER: Get appointments for the selected date
-  const currentAppointments = APPOINTMENTS_DB[selectedDate] || [];
+  useEffect(() => {
+    loadAppointments();
+  }, []);
+
+  const loadAppointments = async (isRefreshing = false) => {
+    if (!isRefreshing) setLoading(true);
+
+    try {
+      const response = await patientAPI.getAppointments();
+      setAppointments(response.data || []);
+    } catch (error) {
+      console.error('Failed to load appointments:', error);
+      const errorInfo = ErrorHandler.handleError(error);
+      if (!isRefreshing) {
+        Alert.alert('Error', errorInfo.message);
+      }
+    } finally {
+      setLoading(false);
+      if (isRefreshing) setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadAppointments(true);
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'accepted':
+        return { backgroundColor: '#E3F2FD', color: '#2196F3' };
+      case 'pending':
+        return { backgroundColor: '#FFF3E0', color: '#FF9800' };
+      case 'declined':
+        return { backgroundColor: '#FFEBEE', color: '#F44336' };
+      default:
+        return { backgroundColor: '#F5F5F5', color: '#666' };
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading appointments...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.contentContainer}>
-        
         {/* Header */}
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-               <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Schedule</Text>
-            <View style={{width: 24}} /> 
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Schedule</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('DoctorSearch')}
+            style={styles.headerAddBtn}
+          >
+            <Ionicons name="add-circle" size={28} color={COLORS.primary} />
+          </TouchableOpacity>
         </View>
 
-        {/* --- INTERACTIVE CALENDAR STRIP --- */}
-        <View style={styles.calendarStrip}>
-           {DATES.map((item, i) => {
-              const isActive = item.date === selectedDate;
+        {/* Appointments List */}
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {appointments.length > 0 ? (
+            appointments.map((appt) => {
+              const statusStyle = getStatusStyle(appt.status);
               return (
-                <TouchableOpacity 
-                  key={i} 
-                  style={[styles.dateBox, isActive && styles.activeDateBox]}
-                  onPress={() => setSelectedDate(item.date)}
-                >
-                   <Text style={[styles.dateText, isActive && styles.activeDateText]}>
-                     {item.day}
-                   </Text>
-                   <Text style={[styles.dateNum, isActive && styles.activeDateText]}>
-                     {item.date}
-                   </Text>
-                </TouchableOpacity>
-              );
-           })}
-        </View>
+                <View key={appt.id} style={styles.appointmentCard}>
+                  {/* Date Header */}
+                  <View style={styles.dateHeader}>
+                    <Ionicons name="calendar-outline" size={16} color="#666" />
+                    <Text style={styles.dateText}>
+                      {formatDate(appt.requested_date)}
+                    </Text>
+                  </View>
 
-        {/* Filters */}
-        <View style={styles.filterRow}>
-           <TouchableOpacity style={[styles.filterChip, {backgroundColor: COLORS.primary}]}><Text style={{color:'white'}}>All</Text></TouchableOpacity>
-           <TouchableOpacity style={styles.filterChip}><Text style={{color:'#666'}}>Consultation</Text></TouchableOpacity>
-           <TouchableOpacity style={styles.filterChip}><Text style={{color:'#666'}}>Procedures</Text></TouchableOpacity>
-        </View>
-
-        {/* --- DYNAMIC APPOINTMENT LIST --- */}
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 80}}>
-           
-           {currentAppointments.length > 0 ? (
-             currentAppointments.map((appt, index) => (
-               <View key={appt.id}>
-                 {/* Logic to show "Current Time" line between 10am and 11:30am (Mock logic for demo) */}
-                 {selectedDate === '14' && index === 2 && (
-                    <View style={styles.currentTimeRow}>
-                      <Text style={styles.currentTimeText}>11:35</Text>
-                      <View style={styles.dot} />
-                      <View style={styles.line} />
-                   </View>
-                 )}
-
-                 <View style={styles.timeRow}>
-                    <Text style={styles.timeLabel}>{appt.time}{'\n'}{appt.ampm}</Text>
-                    <View style={styles.timelineLine} />
-                    <View style={styles.card}>
-                       <View style={styles.cardHeader}>
-                          <Image source={{uri: appt.img}} style={styles.avatar} />
-                          <View style={{flex: 1, marginLeft: 10}}>
-                             <Text style={styles.docName}>{appt.doctor}</Text>
-                             <Text style={styles.docType}>{appt.type}</Text>
-                          </View>
-                          <View style={[styles.statusBadge, {backgroundColor: appt.statusColor}]}>
-                            <Text style={[styles.statusText, {color: appt.statusText}]}>{appt.status}</Text>
-                          </View>
-                       </View>
-                       <Text style={styles.duration}>{appt.duration}</Text>
+                  {/* Appointment Details */}
+                  <View style={styles.appointmentContent}>
+                    <View style={styles.timeSection}>
+                      <Text style={styles.timeText}>
+                        {formatTime(appt.requested_date)}
+                      </Text>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          { backgroundColor: statusStyle.backgroundColor },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.statusText, { color: statusStyle.color }]}
+                        >
+                          {appt.status?.toUpperCase()}
+                        </Text>
+                      </View>
                     </View>
-                 </View>
-               </View>
-             ))
-           ) : (
-             // --- EMPTY STATE ---
-             <View style={styles.emptyState}>
-               <Ionicons name="calendar-outline" size={48} color="#DDD" />
-               <Text style={styles.emptyText}>No appointments for this date</Text>
-             </View>
-           )}
 
+                    <View style={styles.doctorSection}>
+                      <Image
+                        source={{
+                          uri: appt.doctor_photo_url ||
+                            'https://ui-avatars.com/api/?name=Doctor&background=random',
+                        }}
+                        style={styles.doctorImage}
+                      />
+                      <View style={styles.doctorInfo}>
+                        <Text style={styles.doctorName}>
+                          {appt.doctor_name || 'Doctor'}
+                        </Text>
+                        <Text style={styles.reasonText}>
+                          {appt.reason || 'Consultation'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Join Call Button (only for accepted appointments) */}
+                    {appt.status === 'accepted' && appt.join_url && (
+                      <TouchableOpacity
+                        style={styles.joinButton}
+                        onPress={() => {
+                          navigation.navigate('VideoCallScreen', {
+                            appointment: appt,
+                            role: 'patient',
+                          });
+                        }}
+                      >
+                        <Ionicons name="videocam" size={20} color="white" />
+                        <Text style={styles.joinButtonText}>Join Video Call</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Meeting Info (if available) */}
+                    {appt.meeting_password && (
+                      <View style={styles.meetingInfo}>
+                        <Text style={styles.meetingLabel}>Meeting Password:</Text>
+                        <Text style={styles.meetingValue}>
+                          {appt.meeting_password}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={64} color="#DDD" />
+              <Text style={styles.emptyText}>No appointments scheduled</Text>
+              <Text style={styles.emptySubtext}>
+                Book an appointment with a doctor to get started
+              </Text>
+              <TouchableOpacity
+                style={styles.bookButton}
+                onPress={() => navigation.navigate('DoctorSearch')}
+              >
+                <Text style={styles.bookButtonText}>Find a Doctor</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
-        
-        {/* Floating Add Button */}
-        <TouchableOpacity style={styles.fab}>
-           <Ionicons name="add" size={30} color="white" />
-        </TouchableOpacity>
       </View>
 
-      <BottomNavBar navigation={navigation} activeTab="Appointments" />
+      <BottomNavBar navigation={navigation} activeRoute="Schedule" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFC' },
-  contentContainer: { flex: 1, padding: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold' },
-
-  calendarStrip: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  dateBox: { alignItems: 'center', padding: 10, borderRadius: 12, backgroundColor: 'white', minWidth: 50 },
-  activeDateBox: { backgroundColor: COLORS.primary },
-  dateText: { fontSize: 12, color: '#666', marginBottom: 4 },
-  dateNum: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  activeDateText: { color: 'white' },
-
-  filterRow: { flexDirection: 'row', marginBottom: 20 },
-  filterChip: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, backgroundColor: 'white', marginRight: 10 },
-
-  timeRow: { flexDirection: 'row', marginBottom: 20 },
-  timeLabel: { width: 50, fontSize: 12, color: '#999', textAlign: 'center', marginTop: 10 },
-  timelineLine: { width: 1, backgroundColor: '#DDD', marginHorizontal: 10, position: 'relative' },
-  card: { flex: 1, backgroundColor: 'white', borderRadius: 15, padding: 15, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 5 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20 },
-  docName: { fontWeight: 'bold', fontSize: 14 },
-  docType: { color: '#666', fontSize: 12 },
-  statusBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4 },
-  statusText: { fontSize: 10, fontWeight: 'bold' },
-  duration: { fontSize: 12, color: '#999', marginTop: 5 },
-
-  currentTimeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  currentTimeText: { width: 50, fontSize: 12, color: COLORS.primary, fontWeight: 'bold', textAlign: 'center' },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary, marginLeft: 6 },
-  line: { flex: 1, height: 1, backgroundColor: COLORS.primary },
-
-  emptyState: { alignItems: 'center', marginTop: 50 },
-  emptyText: { marginTop: 10, color: '#999' },
-
-  fab: { position: 'absolute', bottom: 20, right: 20, width: 55, height: 55, backgroundColor: COLORS.primary, borderRadius: 27.5, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFC',
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  headerAddBtn: {
+    padding: 4,
+  },
+  scrollContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  appointmentCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  dateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F5F7FA',
+    gap: 8,
+  },
+  dateText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  appointmentContent: {
+    padding: 16,
+  },
+  timeSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  timeText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  doctorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  doctorImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  doctorInfo: {
+    flex: 1,
+  },
+  doctorName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  reasonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  joinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 8,
+  },
+  joinButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  meetingInfo: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#F5F7FA',
+    borderRadius: 8,
+  },
+  meetingLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  meetingValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 100,
+    paddingHorizontal: 40,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#666',
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+  },
+  bookButton: {
+    marginTop: 24,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  bookButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

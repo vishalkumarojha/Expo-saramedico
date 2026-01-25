@@ -1,6 +1,7 @@
 // src/screens/patient/MedicalRecordsScreen.js
 import React from 'react';
-import { View, Text, TextInput, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import BottomNavBar from '../../components/BottomNavBar';
@@ -20,43 +21,43 @@ export default function MedicalRecordsScreen({ navigation }) {
       <View style={styles.contentContainer}>
         {/* Header */}
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-               <Ionicons name="menu-outline" size={28} color="#333" />
-            </TouchableOpacity>
-            <TouchableOpacity>
-               <Ionicons name="notifications-outline" size={24} color="#333" />
-            </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="menu-outline" size={28} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Ionicons name="notifications-outline" size={24} color="#333" />
+          </TouchableOpacity>
         </View>
-        
+
         <Text style={styles.pageTitle}>Medical Records</Text>
 
         {/* Search Row */}
         <View style={styles.searchRow}>
-           <View style={styles.searchContainer}>
-              <Ionicons name="search-outline" size={20} color="#999" />
-              <TextInput placeholder="Search patients, reports, notes..." style={styles.searchInput} />
-           </View>
-           <TouchableOpacity style={styles.addButton}>
-              <Ionicons name="person-add" size={20} color="white" />
-           </TouchableOpacity>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search-outline" size={20} color="#999" />
+            <TextInput placeholder="Search patients, reports, notes..." style={styles.searchInput} />
+          </View>
+          <TouchableOpacity style={styles.addButton}>
+            <Ionicons name="person-add" size={20} color="white" />
+          </TouchableOpacity>
         </View>
 
         {/* Table Header */}
         <View style={styles.tableHeader}>
-           <Text style={[styles.headerText, {flex: 2}]}>PROVIDER</Text>
-           <Text style={[styles.headerText, {flex: 1, textAlign: 'center'}]}>VISIT</Text>
-           <Text style={[styles.headerText, {flex: 1, textAlign: 'right'}]}>PURPOSE</Text>
-           <View style={{width: 20}} /> 
+          <Text style={[styles.headerText, { flex: 2 }]}>PROVIDER</Text>
+          <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>VISIT</Text>
+          <Text style={[styles.headerText, { flex: 1, textAlign: 'right' }]}>PURPOSE</Text>
+          <View style={{ width: 20 }} />
         </View>
 
         {/* List */}
         <ScrollView showsVerticalScrollIndicator={false}>
           {records.map((item) => (
             <View key={item.id} style={styles.row}>
-               <Text style={[styles.cellTextBold, {flex: 2}]}>{item.provider}</Text>
-               <Text style={[styles.cellText, {flex: 1, textAlign: 'center'}]}>{item.date}</Text>
-               <Text style={[styles.cellText, {flex: 1, textAlign: 'right'}]}>{item.purpose}</Text>
-               <Ionicons name="chevron-forward" size={16} color="#ccc" style={{marginLeft: 10}}/>
+              <Text style={[styles.cellTextBold, { flex: 2 }]}>{item.provider}</Text>
+              <Text style={[styles.cellText, { flex: 1, textAlign: 'center' }]}>{item.date}</Text>
+              <Text style={[styles.cellText, { flex: 1, textAlign: 'right' }]}>{item.purpose}</Text>
+              <Ionicons name="chevron-forward" size={16} color="#ccc" style={{ marginLeft: 10 }} />
             </View>
           ))}
         </ScrollView>
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
   contentContainer: { flex: 1, padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   pageTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-  
+
   searchRow: { flexDirection: 'row', marginBottom: 25 },
   searchContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 10, paddingHorizontal: 15, height: 50, marginRight: 10 },
   searchInput: { flex: 1, marginLeft: 10 },

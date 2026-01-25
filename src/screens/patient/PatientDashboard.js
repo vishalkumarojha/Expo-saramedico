@@ -1,33 +1,33 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  SafeAreaView, 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
   Image,
   TouchableOpacity,
   TextInput
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import BottomNavBar from '../../components/BottomNavBar';
-import Sidebar from '../../components/Sidebar'; 
+import Sidebar from '../../components/Sidebar';
 
 export default function PatientDashboard({ navigation }) {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
-      
-      <Sidebar 
-        isVisible={isSidebarVisible} 
-        onClose={() => setIsSidebarVisible(false)} 
+
+      <Sidebar
+        isVisible={isSidebarVisible}
+        onClose={() => setIsSidebarVisible(false)}
         navigation={navigation}
       />
 
       <View style={styles.contentContainer}>
-        <ScrollView 
+        <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
@@ -35,106 +35,106 @@ export default function PatientDashboard({ navigation }) {
           <View style={styles.header}>
             <View>
               <TouchableOpacity onPress={() => setIsSidebarVisible(true)}>
-                 <Ionicons name="menu-outline" size={28} color="#333" />
+                <Ionicons name="menu-outline" size={28} color="#333" />
               </TouchableOpacity>
-              <View style={{marginTop: 15}}>
+              <View style={{ marginTop: 15 }}>
                 <Text style={styles.greetingTitle}>Good Morning, Daniel</Text>
                 <Text style={styles.dateText}>Today is Tuesday, October 24, 2023</Text>
               </View>
             </View>
             <View style={styles.headerRight}>
-               <TouchableOpacity style={{marginRight: 15}}>
-                 <Ionicons name="notifications-outline" size={24} color="#333" />
-               </TouchableOpacity>
-               <View style={styles.avatar}>
-                 <Image source={{uri: 'https://i.pravatar.cc/100?img=11'}} style={styles.avatarImage} />
-               </View>
+              <TouchableOpacity style={{ marginRight: 15 }}>
+                <Ionicons name="notifications-outline" size={24} color="#333" />
+              </TouchableOpacity>
+              <View style={styles.avatar}>
+                <Image source={{ uri: 'https://i.pravatar.cc/100?img=11' }} style={styles.avatarImage} />
+              </View>
             </View>
           </View>
 
           {/* --- SEARCH BAR --- */}
-          <TouchableOpacity 
-             style={styles.searchContainer} 
-             activeOpacity={0.9}
-             onPress={() => navigation.navigate('SearchScreen')}
+          <TouchableOpacity
+            style={styles.searchContainer}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('SearchScreen')}
           >
             <Ionicons name="search-outline" size={20} color="#999" style={styles.searchIcon} />
-            <View pointerEvents="none" style={{flex: 1}}>
-                <TextInput 
-                  placeholder="Search visits, reports, notes..." 
-                  placeholderTextColor="#999"
-                  style={styles.searchInput}
-                  editable={false} 
-                />
+            <View pointerEvents="none" style={{ flex: 1 }}>
+              <TextInput
+                placeholder="Search visits, reports, notes..."
+                placeholderTextColor="#999"
+                style={styles.searchInput}
+                editable={false}
+              />
             </View>
           </TouchableOpacity>
 
           {/* Quick Actions */}
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickActionRow}>
-             <View style={styles.actionCard}>
-                <View style={[styles.iconBox, {backgroundColor: '#FFEBEE'}]}><Ionicons name="heart" size={24} color="#F44336" /></View>
-                <View><Text style={styles.actionLabel}>Heart Rate</Text><Text style={styles.actionValue}>72 bpm</Text></View>
-             </View>
-             <View style={styles.actionCard}>
-                <View style={[styles.iconBox, {backgroundColor: '#E3F2FD'}]}><Ionicons name="pulse" size={24} color="#2196F3" /></View>
-                <View><Text style={styles.actionLabel}>BP</Text><Text style={styles.actionValue}>120/80</Text></View>
-             </View>
-             <View style={[styles.actionCard, {width: 60, marginRight: 20}]}>
-               <View style={[styles.iconBox, {backgroundColor: '#FFF3E0'}]}><Ionicons name="wifi" size={24} color="#FF9800" /></View>
-             </View>
+            <View style={styles.actionCard}>
+              <View style={[styles.iconBox, { backgroundColor: '#FFEBEE' }]}><Ionicons name="heart" size={24} color="#F44336" /></View>
+              <View><Text style={styles.actionLabel}>Heart Rate</Text><Text style={styles.actionValue}>72 bpm</Text></View>
+            </View>
+            <View style={styles.actionCard}>
+              <View style={[styles.iconBox, { backgroundColor: '#E3F2FD' }]}><Ionicons name="pulse" size={24} color="#2196F3" /></View>
+              <View><Text style={styles.actionLabel}>BP</Text><Text style={styles.actionValue}>120/80</Text></View>
+            </View>
+            <View style={[styles.actionCard, { width: 60, marginRight: 20 }]}>
+              <View style={[styles.iconBox, { backgroundColor: '#FFF3E0' }]}><Ionicons name="wifi" size={24} color="#FF9800" /></View>
+            </View>
           </ScrollView>
 
           {/* Up Next Section */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Up Next</Text>
             <TouchableOpacity onPress={() => navigation.navigate('ScheduleScreen')}>
-                <Text style={styles.linkText}>View Calendar</Text>
+              <Text style={styles.linkText}>View Calendar</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.appointmentCard}>
-             <View style={styles.apptHeader}>
-                <View>
-                   <Text style={styles.apptTitle}>Annual Physical Examination</Text>
-                   <View style={styles.apptSubRow}>
-                      <View style={styles.tag}><Text style={styles.tagText}>In-Person Visit</Text></View>
-                      <Text style={styles.docName}>with Dr. Emily Chen</Text>
-                   </View>
+            <View style={styles.apptHeader}>
+              <View>
+                <Text style={styles.apptTitle}>Annual Physical Examination</Text>
+                <View style={styles.apptSubRow}>
+                  <View style={styles.tag}><Text style={styles.tagText}>In-Person Visit</Text></View>
+                  <Text style={styles.docName}>with Dr. Emily Chen</Text>
                 </View>
-                <View style={{alignItems: 'flex-end'}}>
-                   <Text style={styles.timeText}>10:30</Text>
-                   <Text style={styles.amPmText}>AM</Text>
-                </View>
-             </View>
-             
-             <View style={styles.apptActions}>
-                {/* UPDATED: Check-in button now navigates to Video Call */}
-                <TouchableOpacity 
-                  style={styles.checkInBtn}
-                  onPress={() => navigation.navigate('VideoCallScreen')}
-                >
-                  <Text style={styles.checkInText}>Check-in</Text>
-                </TouchableOpacity>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.timeText}>10:30</Text>
+                <Text style={styles.amPmText}>AM</Text>
+              </View>
+            </View>
 
-                <TouchableOpacity style={styles.detailsBtn}>
-                  <Text style={styles.detailsText}>Details</Text>
-                </TouchableOpacity>
-             </View>
+            <View style={styles.apptActions}>
+              {/* UPDATED: Check-in button now navigates to Video Call */}
+              <TouchableOpacity
+                style={styles.checkInBtn}
+                onPress={() => navigation.navigate('VideoCallScreen')}
+              >
+                <Text style={styles.checkInText}>Check-in</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.detailsBtn}>
+                <Text style={styles.detailsText}>Details</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Recent Visits Section */}
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Recent Visits</Text>
             <TouchableOpacity onPress={() => navigation.navigate('MedicalRecordsScreen')}>
-                <Text style={styles.linkText}>View All</Text>
+              <Text style={styles.linkText}>View All</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.visitList}>
-             <VisitItem name="Dr. Arvind Shukla" info="20m ago • MRI Analysis" status="Ready" statusColor="#E8F5E9" textColor="#2E7D32" color="#90CAF9" />
-             <VisitItem name="Dr. Govind Sharma" info="2h ago • Lab Results" status="Pending" statusColor="#FFF8E1" textColor="#FBC02D" color="#9FA8DA" />
-             <VisitItem name="Dr. Avantika Gupta" info="6h ago • Check-Up" status="Closed" statusColor="#EEEEEE" textColor="#757575" color="#B39DDB" />
+            <VisitItem name="Dr. Arvind Shukla" info="20m ago • MRI Analysis" status="Ready" statusColor="#E8F5E9" textColor="#2E7D32" color="#90CAF9" />
+            <VisitItem name="Dr. Govind Sharma" info="2h ago • Lab Results" status="Pending" statusColor="#FFF8E1" textColor="#FBC02D" color="#9FA8DA" />
+            <VisitItem name="Dr. Avantika Gupta" info="6h ago • Check-Up" status="Closed" statusColor="#EEEEEE" textColor="#757575" color="#B39DDB" />
           </View>
 
         </ScrollView>
@@ -147,11 +147,11 @@ export default function PatientDashboard({ navigation }) {
 
 const VisitItem = ({ name, info, status, statusColor, textColor, color }) => (
   <View style={styles.visitItem}>
-     <View style={{flexDirection: 'row', alignItems: 'center'}}>
-       <View style={[styles.visitAvatar, {backgroundColor: color}]} />
-       <View><Text style={styles.visitName}>{name}</Text><Text style={styles.visitInfo}>{info}</Text></View>
-     </View>
-     <View style={[styles.statusBadge, {backgroundColor: statusColor}]}><Text style={[styles.statusText, {color: textColor}]}>• {status}</Text></View>
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={[styles.visitAvatar, { backgroundColor: color }]} />
+      <View><Text style={styles.visitName}>{name}</Text><Text style={styles.visitInfo}>{info}</Text></View>
+    </View>
+    <View style={[styles.statusBadge, { backgroundColor: statusColor }]}><Text style={[styles.statusText, { color: textColor }]}>• {status}</Text></View>
   </View>
 );
 

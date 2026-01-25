@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  SafeAreaView, 
-  TouchableOpacity, 
-  Image 
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Calendar,
+  Modal
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import AdminBottomNavBar from '../../components/AdminBottomNavBar';
@@ -26,15 +28,15 @@ const APPOINTMENTS_DB = {
   '12': [
     {
       id: 'a1', time: '09:00', ampm: 'AM', duration: '30 min',
-      doctor: 'Dr. Emily Chen', type: 'General Checkup', 
+      doctor: 'Dr. Emily Chen', type: 'General Checkup',
       status: 'CONFIRMED', statusColor: '#E3F2FD', statusText: '#2196F3',
       img: 'https://i.pravatar.cc/100?img=5'
     }
   ],
   '13': [
-     {
+    {
       id: 'b1', time: '14:00', ampm: 'PM', duration: '45 min',
-      doctor: 'Dr. John Smith', type: 'Dental Cleaning', 
+      doctor: 'Dr. John Smith', type: 'Dental Cleaning',
       status: 'PENDING', statusColor: '#FFF3E0', statusText: '#FF9800',
       img: 'https://i.pravatar.cc/100?img=11'
     }
@@ -42,19 +44,19 @@ const APPOINTMENTS_DB = {
   '14': [
     {
       id: 'c1', time: '09:00', ampm: 'AM', duration: '54 min',
-      doctor: 'Sarah Jenkins', type: 'General Consultation', 
+      doctor: 'Sarah Jenkins', type: 'General Consultation',
       status: 'CONFIRMED', statusColor: '#E3F2FD', statusText: '#2196F3',
       img: 'https://i.pravatar.cc/100?img=12'
     },
     {
       id: 'c2', time: '10:00', ampm: 'AM', duration: '54 min',
-      doctor: 'Michael Ross', type: 'Post-Op Follow-Up', 
+      doctor: 'Michael Ross', type: 'Post-Op Follow-Up',
       status: 'CHECKED-IN', statusColor: '#E8F5E9', statusText: '#2E7D32',
       img: 'https://i.pravatar.cc/100?img=33'
     },
     {
       id: 'c3', time: '11:30', ampm: 'AM', duration: '54 min',
-      doctor: 'Rosevelt de Francis', type: 'Radiology Review', 
+      doctor: 'Rosevelt de Francis', type: 'Radiology Review',
       status: 'CHECKED-IN', statusColor: '#FFF8E1', statusText: '#F9A825',
       img: 'https://i.pravatar.cc/100?img=14'
     }
@@ -64,85 +66,85 @@ const APPOINTMENTS_DB = {
 export default function AdminScheduleScreen({ navigation }) {
   // State for selected date (default 14th)
   const [selectedDate, setSelectedDate] = useState('14');
-  
+
   // Get data for selected date
   const currentAppointments = APPOINTMENTS_DB[selectedDate] || [];
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.contentContainer}>
-        
+
         {/* Header */}
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-               <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Schedule</Text>
-            <View style={{width: 24}} /> 
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Schedule</Text>
+          <View style={{ width: 24 }} />
         </View>
 
         {/* Date Selector Strip */}
         <View style={styles.calendarStrip}>
-           {DATES.map((item, i) => {
-              const isActive = item.date === selectedDate;
-              return (
-                <TouchableOpacity 
-                  key={i} 
-                  style={[styles.dateBox, isActive && styles.activeDateBox]}
-                  onPress={() => setSelectedDate(item.date)}
-                >
-                   <Text style={[styles.dateText, isActive && styles.activeDateText]}>{item.day}</Text>
-                   <Text style={[styles.dateNum, isActive && styles.activeDateText]}>{item.date}</Text>
-                </TouchableOpacity>
-              );
-           })}
+          {DATES.map((item, i) => {
+            const isActive = item.date === selectedDate;
+            return (
+              <TouchableOpacity
+                key={i}
+                style={[styles.dateBox, isActive && styles.activeDateBox]}
+                onPress={() => setSelectedDate(item.date)}
+              >
+                <Text style={[styles.dateText, isActive && styles.activeDateText]}>{item.day}</Text>
+                <Text style={[styles.dateNum, isActive && styles.activeDateText]}>{item.date}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Scrollable Appointment List */}
-        <ScrollView 
-           showsVerticalScrollIndicator={false}
-           contentContainerStyle={{ paddingBottom: 80 }}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 80 }}
         >
-           {currentAppointments.length > 0 ? (
-             currentAppointments.map((appt, index) => (
-               <View key={appt.id}>
-                 {/* Logic for "Current Time" line (Demo purpose) */}
-                 {selectedDate === '14' && index === 2 && (
-                    <View style={styles.currentTimeRow}>
-                      <Text style={styles.currentTimeText}>11:35</Text>
-                      <View style={styles.dot} />
-                      <View style={styles.line} />
-                   </View>
-                 )}
+          {currentAppointments.length > 0 ? (
+            currentAppointments.map((appt, index) => (
+              <View key={appt.id}>
+                {/* Logic for "Current Time" line (Demo purpose) */}
+                {selectedDate === '14' && index === 2 && (
+                  <View style={styles.currentTimeRow}>
+                    <Text style={styles.currentTimeText}>11:35</Text>
+                    <View style={styles.dot} />
+                    <View style={styles.line} />
+                  </View>
+                )}
 
-                 <View style={styles.timeRow}>
-                    <Text style={styles.timeLabel}>{appt.time}{'\n'}{appt.ampm}</Text>
-                    <View style={styles.timelineLine} />
-                    <View style={styles.card}>
-                       <View style={styles.cardHeader}>
-                          <Image source={{uri: appt.img}} style={styles.avatar} />
-                          <View style={{flex: 1, marginLeft: 10}}>
-                             <Text style={styles.docName}>{appt.doctor}</Text>
-                             <Text style={styles.docType}>{appt.type}</Text>
-                          </View>
-                          <View style={[styles.statusBadge, {backgroundColor: appt.statusColor}]}>
-                            <Text style={[styles.statusText, {color: appt.statusText}]}>{appt.status}</Text>
-                          </View>
-                       </View>
-                       <Text style={styles.duration}>{appt.duration}</Text>
+                <View style={styles.timeRow}>
+                  <Text style={styles.timeLabel}>{appt.time}{'\n'}{appt.ampm}</Text>
+                  <View style={styles.timelineLine} />
+                  <View style={styles.card}>
+                    <View style={styles.cardHeader}>
+                      <Image source={{ uri: appt.img }} style={styles.avatar} />
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.docName}>{appt.doctor}</Text>
+                        <Text style={styles.docType}>{appt.type}</Text>
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: appt.statusColor }]}>
+                        <Text style={[styles.statusText, { color: appt.statusText }]}>{appt.status}</Text>
+                      </View>
                     </View>
-                 </View>
-               </View>
-             ))
-           ) : (
-             <View style={styles.emptyState}>
-               <Ionicons name="calendar-outline" size={48} color="#DDD" />
-               <Text style={styles.emptyText}>No appointments for this date</Text>
-             </View>
-           )}
+                    <Text style={styles.duration}>{appt.duration}</Text>
+                  </View>
+                </View>
+              </View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="calendar-outline" size={48} color="#DDD" />
+              <Text style={styles.emptyText}>No appointments for this date</Text>
+            </View>
+          )}
         </ScrollView>
       </View>
-      
+
       <AdminBottomNavBar navigation={navigation} activeTab="Appointments" />
     </SafeAreaView>
   );

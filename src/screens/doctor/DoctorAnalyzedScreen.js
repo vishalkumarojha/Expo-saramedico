@@ -1,22 +1,23 @@
 import React from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity 
+import {
+  View, Text, StyleSheet, TouchableOpacity
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomButton } from '../../components/CustomComponents';
 
 export default function DoctorAnalyzedScreen({ navigation }) {
-  
+
   const handleContinue = () => {
     // End of Onboarding -> Go to Dashboard
-    navigation.replace('DoctorDashboard'); 
+    navigation.replace('DoctorDashboard');
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* Header */}
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -31,12 +32,12 @@ export default function DoctorAnalyzedScreen({ navigation }) {
 
         {/* Placeholder for Document Preview / Analysis Result */}
         <View style={styles.previewContainer}>
-           {/* In a real app, the PDF or analysis results would render here */}
+          {/* In a real app, the PDF or analysis results would render here */}
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-           <CustomButton title="Continue to Dashboard →" onPress={handleContinue} />
+          <CustomButton title="Continue to Dashboard →" onPress={handleContinue} />
         </View>
 
       </View>
@@ -47,7 +48,7 @@ export default function DoctorAnalyzedScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
   content: { flex: 1, padding: 25 },
-  
+
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 30 },
   progressBarTrack: { flex: 1, height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, marginLeft: 20 },
   progressBarFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 3 },

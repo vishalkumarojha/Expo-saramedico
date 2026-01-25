@@ -1,7 +1,8 @@
 import React from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity 
+import {
+  View, Text, StyleSheet, TouchableOpacity
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomButton } from '../../components/CustomComponents';
@@ -16,43 +17,43 @@ export default function DoctorQuickUploadScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* Header */}
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-               <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <View style={{flexDirection:'row', gap:15}}>
-              <Ionicons name="notifications" size={24} color="#333" />
-              <View style={styles.avatar} />
-           </View>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 15 }}>
+            <Ionicons name="notifications" size={24} color="#333" />
+            <View style={styles.avatar} />
+          </View>
         </View>
 
         {/* Upload Card */}
         <View style={styles.uploadCard}>
-           <View style={styles.iconCircle}>
-              <Ionicons name="cloud-upload" size={24} color="#333" />
-           </View>
-           <Text style={styles.cardTitle}>Upload Documents</Text>
-           <Text style={styles.cardSub}>Tap to browse files.{'\n'}Supports PDF, JPG, PNG Max 100MB.</Text>
-           
-           <TouchableOpacity style={styles.browseBtn}>
-              <Text style={styles.browseText}>Browse Files</Text>
-           </TouchableOpacity>
+          <View style={styles.iconCircle}>
+            <Ionicons name="cloud-upload" size={24} color="#333" />
+          </View>
+          <Text style={styles.cardTitle}>Upload Documents</Text>
+          <Text style={styles.cardSub}>Tap to browse files.{'\n'}Supports PDF, JPG, PNG Max 100MB.</Text>
+
+          <TouchableOpacity style={styles.browseBtn}>
+            <Text style={styles.browseText}>Browse Files</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Settings */}
         <Text style={styles.label}>Upload Settings</Text>
         <Text style={styles.subLabel}>Document Category</Text>
         <View style={styles.dropdown}>
-           <Text style={{color:'#333'}}>Clinical Report</Text>
-           <Ionicons name="chevron-down" size={20} color="#666" />
+          <Text style={{ color: '#333' }}>Clinical Report</Text>
+          <Ionicons name="chevron-down" size={20} color="#666" />
         </View>
 
         {/* Footer Button */}
         <View style={styles.footer}>
-           {/* Triggers navigation to the Result Screen */}
-           <CustomButton title="Analyze →" onPress={handleAnalyze} />
+          {/* Triggers navigation to the Result Screen */}
+          <CustomButton title="Analyze →" onPress={handleAnalyze} />
         </View>
 
       </View>
