@@ -108,11 +108,28 @@ export const authAPI = {
   verifyMFASetup: (code) => api.post('/auth/mfa/verify-setup', { code }),
   verifyMFA: (sessionId, code) => api.post('/auth/mfa/verify', { session_id: sessionId, code }),
   disableMFA: () => api.post('/auth/mfa/disable'),
+
+  // POST /auth/change-password
+  changePassword: (oldPassword, newPassword) => api.post('/auth/change-password', {
+    old_password: oldPassword,
+    new_password: newPassword
+  }),
 };
 
 // ==================== PATIENT API ====================
 
 export const patientAPI = {
+  // GET /patients/me - Get current patient profile
+  getProfile: () => api.get('/patients/me'),
+
+  // PATCH /patients/me - Update patient profile
+  updateProfile: (data) => api.patch('/patients/me', data),
+
+  // GET /consultations - Get patient consultation history
+  getMyConsultations: (limit = 10) => api.get('/consultations', {
+    params: { limit }
+  }),
+
   // GET /doctors/search?specialty=...&query=...
   searchDoctors: (params) => api.get('/doctors/search', { params }),
 
@@ -129,17 +146,17 @@ export const patientAPI = {
     return api.post('/patient/medical-history', formData, config);
   },
 
-  // GET /appointments (Patient View)
+  // GET /appointments/patient-appointments (Patient View)
   getMyAppointments: () => api.get('/appointments/patient-appointments'),
 
-  // POST /appointments (Create appointment request)
-  requestAppointment: (data) => api.post('/appointments', data),
+  // POST /appointments/request (Create appointment request) - FIXED to match backend
+  requestAppointment: (data) => api.post('/appointments/request', data),
 
-  // GET /patient/appointments - List all appointments
-  getAppointments: () => api.get('/patient/appointments'),
+  // GET /appointments/patient-appointments - List all patient appointments
+  getAppointments: () => api.get('/appointments/patient-appointments'),
 
-  // GET /patient/appointments/{id} - Get single appointment
-  getAppointment: (appointmentId) => api.get(`/patient/appointments/${appointmentId}`),
+  // GET /appointments/{id} - Get single appointment
+  getAppointment: (appointmentId) => api.get(`/appointments/${appointmentId}`),
 
   // GET /patient/documents
   getMyDocuments: () => api.get('/patient/documents'),
@@ -154,8 +171,11 @@ export const doctorAPI = {
   // PATCH /doctor/profile
   updateProfile: (data) => api.patch('/doctor/profile', data),
 
-  // GET /doctor/patients
+  // GET /doctor/patients (supports search param)
   getPatients: () => api.get('/doctor/patients'),
+
+  // Search patients by name
+  searchPatients: (query) => api.get('/doctor/patients', { params: { search: query } }),
 
   // GET /doctor/appointments?status=...
   getAppointments: (status) => api.get('/doctor/appointments', {
@@ -171,20 +191,31 @@ export const doctorAPI = {
   // POST /appointments/{id}/approve (Generates Zoom Link)
   approveAppointment: (id, data) => api.post(`/appointments/${id}/approve`, data),
 
+  // POST /appointments/instant (Create instant appointment with Zoom)
+  createInstantAppointment: (patientId) => api.post('/appointments/instant', null, {
+    params: { patient_id: patientId }
+  }),
+
   // PATCH /appointments/{id}/status (Reject)
   updateAppointmentStatus: (id, status, notes) => api.patch(`/appointments/${id}/status`, {
     status,
     doctor_notes: notes,
   }),
 
-  // GET /doctor/patients/{id}/documents (Requires Permission)
-  getPatientDocuments: (patientId) => api.get(`/doctor/patients/${patientId}/documents`),
+  // GET /api/v1/documents (with patient filter)
+  getPatientDocuments: (patientId) => api.get('/api/v1/documents', {
+    params: { patient_id: patientId }
+  }),
 
-  // Task Management
+  // Task Management - /doctor/tasks
   createTask: (data) => api.post('/doctor/tasks', data),
   getTasks: () => api.get('/doctor/tasks'),
   updateTask: (id, data) => api.patch(`/doctor/tasks/${id}`, data),
   deleteTask: (id) => api.delete(`/doctor/tasks/${id}`),
+
+  // Dashboard/Analytics (Optional)
+  getDashboardStats: () => api.get('/doctor/dashboard/stats'),
+  getUpcomingAppointments: () => api.get('/doctor/appointments/upcoming'),
 
   // Doctor Records
   createRecord: (patientId, data) => api.post('/doctor/records', {
@@ -195,6 +226,42 @@ export const doctorAPI = {
     params: { patient_id: patientId }
   }),
   updateRecord: (recordId, data) => api.patch(`/doctor/records/${recordId}`, data),
+
+  // Documents - /documents
+  requestUploadUrl: (patientId, fileName, fileType, fileSize) => api.post('/documents/upload-url', {
+    patientId,
+    fileName,
+    fileType,
+    fileSize
+  }),
+  confirmUpload: (documentId, metadata = {}) => api.post(`/documents/${documentId}/confirm`, { metadata }),
+  analyzeDocument: (documentId) => api.post(`/documents/${documentId}/analyze`),
+  getDocuments: () => api.get('/documents'),
+  getDocument: (documentId) => api.get(`/documents/${documentId}`),
+  deleteDocument: (documentId) => api.delete(`/documents/${documentId}`),
+
+  // Search endpoints
+  searchAll: async (query) => {
+    try {
+      const [doctorsRes, patientsRes] = await Promise.all([
+        api.get('/doctors/search', { params: { query } }).catch(() => ({ data: { results: [] } })),
+        api.get('/doctor/patients', { params: { search: query } }).catch(() => ({ data: [] }))
+      ]);
+      return {
+        data: {
+          doctors: doctorsRes.data?.results || [],
+          patients: Array.isArray(patientsRes.data) ? patientsRes.data : [],
+          documents: []
+        }
+      };
+    } catch (error) {
+      console.error('Search all error:', error);
+      return { data: { doctors: [], patients: [], documents: [] } };
+    }
+  },
+  searchPatients: (query) => api.get('/doctor/patients', { params: { search: query } }),
+  searchDoctors: (query) => api.get('/doctors/search', { params: { query } }),
+  searchDocuments: (query) => api.get('/documents', { params: { search: query } }),
 };
 
 // ==================== CONSULTATION API ====================
@@ -216,7 +283,30 @@ export const consultationAPI = {
   addConsultationNote: (id, note) => api.post(`/consultations/${id}/notes`, { note }),
 };
 
-// ==================== AI INTEGRATION API ====================
+// ==================== APPOINTMENT API ====================
+
+export const appointmentAPI = {
+  // POST /api/v1/appointments - Create appointment
+  createAppointment: (data) => api.post('/api/v1/appointments', data),
+
+  // GET /api/v1/appointments/patient-appointments - Get patient appointments
+  getPatientAppointments: (patientId) => api.get('/api/v1/appointments/patient-appointments', {
+    params: { patient_id: patientId }
+  }),
+
+  // PATCH /api/v1/appointments/{appointment_id}/status - Update appointment status
+  updateAppointmentStatus: (appointmentId, status) => api.patch(`/api/v1/appointments/${appointmentId}/status`, {
+    status
+  }),
+
+  // POST /api/v1/appointments/request - Request appointment
+  requestAppointment: (data) => api.post('/api/v1/appointments/request', data),
+
+  // POST /api/v1/appointments/{appointment_id}/approve - Approve appointment
+  approveAppointment: (appointmentId) => api.post(`/api/v1/appointments/${appointmentId}/approve`),
+};
+
+// ==================== ZOOM INTEGRATION ========================
 
 export const aiAPI = {
   // POST /doctor/ai/contribute
@@ -251,6 +341,9 @@ export const teamAPI = {
   // POST /team/invite
   inviteTeamMember: (data) => api.post('/team/invite', data),
 
+  // GET /team/roles - List Team Roles
+  getTeamRoles: () => api.get('/team/roles'),
+
   // GET /team/invitations
   getInvitations: () => api.get('/team/invitations'),
 
@@ -265,6 +358,9 @@ export const teamAPI = {
 
   // DELETE /team/members/{id}
   removeTeamMember: (id) => api.delete(`/team/members/${id}`),
+
+  // PATCH /team/members/{id}
+  updateTeamMember: (id, data) => api.patch(`/team/members/${id}`, data),
 };
 
 // ==================== AUDIT & COMPLIANCE API ====================
@@ -307,9 +403,9 @@ export const documentsAPI = {
 export const storeTokens = async (accessToken, refreshToken, userData) => {
   try {
     await AsyncStorage.multiSet([
-      [TOKEN_CONFIG.ACCESS_TOKEN_KEY, accessToken],
+      [TOKEN_CONFIG.ACCESS_TOKEN_KEY, accessToken || ''],
       [TOKEN_CONFIG.REFRESH_TOKEN_KEY, refreshToken || ''],
-      [TOKEN_CONFIG.USER_DATA_KEY, JSON.stringify(userData)],
+      [TOKEN_CONFIG.USER_DATA_KEY, userData ? JSON.stringify(userData) : '{}'],
     ]);
   } catch (error) {
     console.error('Error storing tokens:', error);
@@ -317,16 +413,116 @@ export const storeTokens = async (accessToken, refreshToken, userData) => {
 };
 
 /**
- * Get stored user data
+ * Get stored user data - fetches fresh from backend if possible
+ * For doctors, merges with locally stored profile data
  */
 export const getUserData = async () => {
+  let userData = null;
+
+  // Try to fetch fresh data from backend
   try {
-    const userData = await AsyncStorage.getItem(TOKEN_CONFIG.USER_DATA_KEY);
-    return userData ? JSON.parse(userData) : null;
+    const response = await api.get('/auth/me');
+    if (response.data) {
+      userData = response.data;
+      await AsyncStorage.setItem(TOKEN_CONFIG.USER_DATA_KEY, JSON.stringify(response.data));
+    }
   } catch (error) {
-    console.error('Error getting user data:', error);
-    return null;
+    console.log('Could not fetch fresh user data, using cached:', error.message);
   }
+
+  // Fallback to cached data
+  if (!userData) {
+    try {
+      const cachedData = await AsyncStorage.getItem(TOKEN_CONFIG.USER_DATA_KEY);
+      userData = cachedData ? JSON.parse(cachedData) : null;
+    } catch (error) {
+      console.error('Error getting cached user data:', error);
+    }
+  }
+
+  // For doctors, merge with locally stored doctor profile (has specialty, license, phone)
+  if (userData && userData.role === 'doctor') {
+    try {
+      const doctorProfile = await AsyncStorage.getItem('doctor_profile');
+      if (doctorProfile) {
+        const profileData = JSON.parse(doctorProfile);
+        userData = {
+          ...userData,
+          specialty: profileData.specialty || userData.specialty,
+          license_number: profileData.license_number || userData.license_number,
+          phone: profileData.phone || userData.phone_number || userData.phone,
+          phone_number: profileData.phone || userData.phone_number,
+          full_name: userData.name || userData.full_name || profileData.full_name
+        };
+      }
+    } catch (error) {
+      console.log('Could not load doctor profile:', error.message);
+    }
+  }
+
+  return userData;
+};
+
+// ==================== ADMIN API ====================
+
+export const adminAPI = {
+  // GET /api/v1/admin/overview - Get Dashboard Overview
+  getOverview: () => api.get('/admin/overview'),
+
+  // GET /api/v1/admin/settings - Get All Settings
+  getSettings: () => api.get('/admin/settings'),
+
+  // PATCH /api/v1/admin/settings/organization - Update Org Settings
+  updateOrganizationSettings: (data) => api.patch('/admin/settings/organization', data),
+
+  // GET /api/v1/admin/accounts - Get Account List
+  getAccounts: (params) => api.get('/admin/accounts', { params }),
+
+  // POST /api/v1/admin/invite - Invite Team Member
+  inviteTeamMember: (data) => api.post('/admin/invite', data),
+
+  // DELETE /api/v1/admin/accounts/{id} - Revoke Access
+  revokeAccess: (userId) => api.delete(`/admin/accounts/${userId}`),
+
+  // GET /api/v1/admin/accounts/{id} - Get Account Details
+  getAccountDetails: (userId) => api.get(`/admin/accounts/${userId}`),
+
+  // PATCH /api/v1/admin/accounts/{id} - Update Account
+  updateAccount: (userId, data) => api.patch(`/admin/accounts/${userId}`, data),
+};
+
+// ==================== HOSPITAL API ====================
+
+export const hospitalAPI = {
+  // GET /hospital/dashboard - Get Hospital Dashboard Stats
+  getDashboard: () => api.get('/hospital/dashboard'),
+
+  // GET /hospital/doctors - List Hospital Doctors
+  getDoctors: () => api.get('/hospital/doctors'),
+
+  // GET /hospital/patients - List Hospital Patients
+  getPatients: () => api.get('/hospital/patients'),
+
+  // GET /hospital/appointments - List Hospital Appointments
+  getAppointments: (params) => api.get('/hospital/appointments', { params }),
+
+  // GET /hospital/departments - List Departments
+  getDepartments: () => api.get('/hospital/departments'),
+
+  // POST /hospital/departments - Create Department
+  createDepartment: (data) => api.post('/hospital/departments', data),
+
+  // PATCH /hospital/departments/{id} - Update Department
+  updateDepartment: (departmentId, data) => api.patch(`/hospital/departments/${departmentId}`, data),
+
+  // DELETE /hospital/departments/{id} - Delete Department
+  deleteDepartment: (departmentId) => api.delete(`/hospital/departments/${departmentId}`),
+
+  // GET /hospital/settings - Get Hospital Settings
+  getSettings: () => api.get('/hospital/settings'),
+
+  // PATCH /hospital/settings - Update Hospital Settings
+  updateSettings: (data) => api.patch('/hospital/settings', data),
 };
 
 /**

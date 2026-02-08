@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
    View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Image, Modal, TouchableWithoutFeedback
 } from 'react-native';
@@ -8,15 +8,95 @@ import { COLORS } from '../../constants/theme';
 import DoctorBottomNavBar from '../../components/DoctorBottomNavBar';
 import DoctorNewMeetModal from './DoctorNewMeetModal';
 import DoctorSidebar from '../../components/DoctorSidebar';
+import { doctorAPI, getUserData } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function DoctorDashboard({ navigation }) {
    const [modalVisible, setModalVisible] = useState(false);
    const [showMeetModal, setShowMeetModal] = useState(false);
    const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+   const [doctorName, setDoctorName] = useState('');
+   const [todayAppointmentCount, setTodayAppointmentCount] = useState(0);
+   const [loading, setLoading] = useState(true);
+   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+   const [recentPatients, setRecentPatients] = useState([]);
+
+   useFocusEffect(
+      React.useCallback(() => {
+         loadDashboardData();
+      }, [])
+   );
+
+   const loadDashboardData = async () => {
+      setLoading(true);
+      try {
+         // Fetch doctor profile
+         const userData = await getUserData();
+         setDoctorName(userData.full_name || 'Doctor');
+
+         // Fetch appointments from real API
+         try {
+            const appointmentsResponse = await doctorAPI.getAppointments();
+            const appointments = appointmentsResponse.data || [];
+
+            // Filter for today's appointments
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const todaysAppointments = appointments.filter(apt => {
+               const aptDate = new Date(apt.scheduled_at || apt.appointment_date);
+               aptDate.setHours(0, 0, 0, 0);
+               return aptDate.getTime() === today.getTime();
+            });
+
+            setTodayAppointmentCount(todaysAppointments.length);
+
+            // Get upcoming appointments (future appointments sorted by date)
+            const now = new Date();
+            const upcoming = appointments
+               .filter(apt => new Date(apt.scheduled_at || apt.appointment_date) > now)
+               .sort((a, b) => new Date(a.scheduled_at || a.appointment_date) - new Date(b.scheduled_at || b.appointment_date))
+               .slice(0, 5); // Top 5
+
+            setUpcomingAppointments(upcoming);
+         } catch (err) {
+            console.log('No appointments found');
+            setTodayAppointmentCount(0);
+            setUpcomingAppointments([]);
+         }
+
+         // Fetch recent patients
+         try {
+            const patientsResponse = await doctorAPI.getPatients();
+            const patients = patientsResponse.data?.patients || patientsResponse.data || [];
+
+            // Sort by last visit and take top 3
+            const sorted = patients
+               .sort((a, b) => {
+                  const dateA = new Date(a.lastVisit || a.last_visit || a.updated_at || 0);
+                  const dateB = new Date(b.lastVisit || b.last_visit || b.updated_at || 0);
+                  return dateB - dateA;
+               })
+               .slice(0, 3);
+
+            setRecentPatients(sorted);
+         } catch (err) {
+            console.log('No patients found');
+            setRecentPatients([]);
+         }
+
+      } catch (error) {
+         console.error('Error loading dashboard data:', error);
+      } finally {
+         setLoading(false);
+      }
+   };
 
    const openNewMeet = () => { setModalVisible(false); setShowMeetModal(true); };
-   const openAddPatient = () => { setModalVisible(false); navigation.navigate('DoctorPatientDirectoryScreen'); };
+   const openAddPatient = () => { setModalVisible(false); navigation.navigate('DoctorAddPatientScreen'); };
    const openUpload = () => { setModalVisible(false); navigation.navigate('DoctorQuickUploadScreen'); };
+   const openDictateNotes = () => { setModalVisible(false); navigation.navigate('DoctorDictateNotesScreen'); };
 
    return (
       <SafeAreaView style={styles.container}>
@@ -25,6 +105,7 @@ export default function DoctorDashboard({ navigation }) {
             isVisible={isSidebarVisible}
             onClose={() => setIsSidebarVisible(false)}
             navigation={navigation}
+            onStartMeet={() => setShowMeetModal(true)}
          />
 
          <View style={styles.contentContainer}>
@@ -37,13 +118,17 @@ export default function DoctorDashboard({ navigation }) {
                      <Ionicons name="menu-outline" size={28} color="#333" />
                   </TouchableOpacity>
                   <View style={styles.headerRight}>
-                     <TouchableOpacity><Ionicons name="notifications" size={24} color="#333" /></TouchableOpacity>
-                     <View style={styles.avatar} />
+                     <TouchableOpacity onPress={() => navigation.navigate('DoctorAlertsScreen')}>
+                        <Ionicons name="notifications" size={24} color="#333" />
+                     </TouchableOpacity>
+                     <TouchableOpacity onPress={() => navigation.navigate('DoctorSettingsScreen')}>
+                        <View style={styles.avatar} />
+                     </TouchableOpacity>
                   </View>
                </View>
 
-               <Text style={styles.greeting}>Good Morning, Dr. Rajeev</Text>
-               <Text style={styles.subGreeting}>You have <Text style={{ fontWeight: 'bold' }}>5 appointments</Text> today</Text>
+               <Text style={styles.greeting}>Good {getTimeOfDay()}, Dr. {doctorName}</Text>
+               <Text style={styles.subGreeting}>You have <Text style={{ fontWeight: 'bold' }}>{todayAppointmentCount} {todayAppointmentCount === 1 ? 'appointment' : 'appointments'}</Text> today</Text>
 
                {/* LINKED SEARCH BAR */}
                <TouchableOpacity
@@ -73,39 +158,45 @@ export default function DoctorDashboard({ navigation }) {
                </View>
 
                <View style={styles.apptCard}>
-                  <View style={styles.apptRow}>
-                     <View style={styles.blueLine} />
-                     <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                           <Text style={styles.patientName}>Abhinav Singh</Text>
-                           <Text style={styles.timeText}>10:30</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                              <View style={styles.tag}><Text style={styles.tagText}>Follow-Up</Text></View>
-                              <Text style={styles.reasonText}>Post-op check</Text>
+                  {upcomingAppointments.length > 0 ? (
+                     <>
+                        <View style={styles.apptRow}>
+                           <View style={styles.blueLine} />
+                           <View style={{ flex: 1 }}>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                 <Text style={styles.patientName}>{upcomingAppointments[0].patient?.full_name || upcomingAppointments[0].patient_name || 'Patient'}</Text>
+                                 <Text style={styles.timeText}>
+                                    {new Date(upcomingAppointments[0].scheduled_at || upcomingAppointments[0].appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                 </Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={styles.tag}><Text style={styles.tagText}>{upcomingAppointments[0].status || 'Scheduled'}</Text></View>
+                                    <Text style={styles.reasonText}>{upcomingAppointments[0].reason || 'Visit'}</Text>
+                                 </View>
+                              </View>
                            </View>
-                           <Text style={styles.ampmText}>AM</Text>
                         </View>
+                        <View style={styles.btnRow}>
+                           <TouchableOpacity
+                              style={styles.startBtn}
+                              onPress={() => navigation.navigate('DoctorPatientDetailScreen', { patient: upcomingAppointments[0].patient, patientId: upcomingAppointments[0].patient_id })}
+                           >
+                              <Text style={styles.startBtnText}>Start Visit</Text>
+                           </TouchableOpacity>
+                           <TouchableOpacity
+                              style={styles.detailsBtn}
+                              onPress={() => navigation.navigate('DoctorQuickUploadScreen', { patient: upcomingAppointments[0].patient })}
+                           >
+                              <Text style={styles.detailsBtnText}>Upload Doc</Text>
+                           </TouchableOpacity>
+                        </View>
+                     </>
+                  ) : (
+                     <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Text style={{ color: '#999' }}>No upcoming appointments</Text>
                      </View>
-                  </View>
-
-                  {/* LINKED BUTTONS */}
-                  <View style={styles.btnRow}>
-                     <TouchableOpacity
-                        style={styles.startBtn}
-                        onPress={() => navigation.navigate('DoctorPatientDetailScreen', { patient: { name: 'Abhinav Singh', mrn: 'N/A' } })}
-                     >
-                        <Text style={styles.startBtnText}>Start Visit</Text>
-                     </TouchableOpacity>
-
-                     <TouchableOpacity
-                        style={styles.detailsBtn}
-                        onPress={() => navigation.navigate('DoctorQuickUploadScreen')}
-                     >
-                        <Text style={styles.detailsBtnText}>Details</Text>
-                     </TouchableOpacity>
-                  </View>
+                  )}
                </View>
 
                {/* Recent Patients */}
@@ -116,13 +207,31 @@ export default function DoctorDashboard({ navigation }) {
                   </TouchableOpacity>
                </View>
 
-               <View style={styles.recentCard}>
-                  <View style={styles.recentItem}>
-                     <View style={styles.recentAvatar} />
-                     <Text style={styles.recentName}>Arvind Shukla</Text>
-                     <View style={styles.statusBadge}><Text style={styles.statusText}>• Ready</Text></View>
+               {recentPatients.length > 0 ? (
+                  recentPatients.map((patient) => (
+                     <TouchableOpacity
+                        key={patient.id}
+                        style={styles.recentCard}
+                        onPress={() => navigation.navigate('DoctorPatientDetailScreen', { patient, patientId: patient.id })}
+                     >
+                        <View style={styles.recentItem}>
+                           <View style={[styles.recentAvatar, { backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center' }]}>
+                              <Ionicons name="person" size={16} color={COLORS.primary} />
+                           </View>
+                           <Text style={styles.recentName}>{patient.name}</Text>
+                           <View style={styles.statusBadge}>
+                              <Text style={styles.statusText}>• {patient.statusTag || 'Active'}</Text>
+                           </View>
+                        </View>
+                     </TouchableOpacity>
+                  ))
+               ) : (
+                  <View style={styles.recentCard}>
+                     <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Text style={{ color: '#999' }}>No recent patients</Text>
+                     </View>
                   </View>
-               </View>
+               )}
                <View style={{ height: 100 }} />
             </ScrollView>
 
@@ -153,6 +262,11 @@ export default function DoctorDashboard({ navigation }) {
                      <View style={{ flex: 1 }}><Text style={styles.modalItemTitle}>Add Patient</Text><Text style={styles.modalItemSub}>Manually add a new Patient</Text></View>
                      <Ionicons name="chevron-forward" size={20} color="#CCC" />
                   </TouchableOpacity>
+                  <TouchableOpacity style={styles.modalItem} onPress={openDictateNotes}>
+                     <View style={styles.modalIconBox}><Ionicons name="mic" size={24} color="#2196F3" /></View>
+                     <View style={{ flex: 1 }}><Text style={styles.modalItemTitle}>Dictate Notes</Text><Text style={styles.modalItemSub}>Voice notes with transcription</Text></View>
+                     <Ionicons name="chevron-forward" size={20} color="#CCC" />
+                  </TouchableOpacity>
                   <TouchableOpacity style={styles.modalItem} onPress={openUpload}>
                      <View style={styles.modalIconBox}><Ionicons name="document-text" size={24} color="#2196F3" /></View>
                      <View style={{ flex: 1 }}><Text style={styles.modalItemTitle}>Upload Documents</Text><Text style={styles.modalItemSub}>Scan or import medical files</Text></View>
@@ -169,6 +283,14 @@ export default function DoctorDashboard({ navigation }) {
       </SafeAreaView>
    );
 }
+
+// Helper function to get time of day greeting
+const getTimeOfDay = () => {
+   const hour = new Date().getHours();
+   if (hour < 12) return 'Morning';
+   if (hour < 17) return 'Afternoon';
+   return 'Evening';
+};
 
 const QuickActionItem = ({ icon, label, color, bg, onPress }) => (
    <TouchableOpacity style={styles.quickItem} onPress={onPress}>

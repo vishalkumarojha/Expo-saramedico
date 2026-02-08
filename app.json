@@ -1,35 +1,29 @@
 {
   "expo": {
-    "name": "jealous-indigo-yogurt",
-    "slug": "snack-19441ac0-b030-4fc5-8602-443d01fd3637",
+    "name": "Sara Medico",
+    "slug": "your-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
+      "package": "com.saramedico.app",
+      "minSdkVersion": 28,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.sara.medico"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+      }
     },
     "extra": {
       "eas": {
-        "projectId": "733344be-f97e-4478-ac6c-4ca8ed0a50f6"
+        "projectId": "eedea6cc-7eaa-4065-a88e-17bb3487b8ff"
       }
-    }
+    },
+    "ios": {
+      "bundleIdentifier": "com.yourname.yourapp"
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

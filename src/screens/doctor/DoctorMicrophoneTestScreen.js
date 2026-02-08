@@ -10,8 +10,8 @@ import { CustomButton } from '../../components/CustomComponents';
 export default function DoctorMicrophoneTestScreen({ navigation }) {
 
   const handleNextStep = () => {
-    // Navigate to Step 3: Upload Documents
-    navigation.navigate('DoctorUploadScreen');
+    // Navigate directly to Dashboard (onboarding complete)
+    navigation.navigate('DoctorDashboard');
   };
 
   return (

@@ -3,9 +3,8 @@ import { RNZoomUs } from '@zoom/meetingsdk-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Zoom SDK credentials from environment
-const ZOOM_SDK_KEY = 'YOUR_ZOOM_SDK_KEY'; // Replace with actual SDK key
-const ZOOM_SDK_SECRET = 'YOUR_ZOOM_SDK_SECRET'; // Replace with actual SDK secret
-
+const ZOOM_SDK_KEY = 'ZtF1gvszTRaRUOWUbUBi2w';
+const ZOOM_SDK_SECRET = 'v0dXYvEKyONTRRHHJJREoaXWfjNIuemD';
 class ZoomService {
     constructor() {
         this.initialized = false;

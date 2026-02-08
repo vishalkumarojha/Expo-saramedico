@@ -9,6 +9,8 @@ import PatientNavigator from './src/navigation/PatientNavigator';
 import DoctorNavigator from './src/navigation/DoctorNavigator';
 import AdminNavigator from './src/navigation/AdminNavigator';
 import HospitalNavigator from './src/navigation/HospitalNavigator';
+import SplashScreen from './src/screens/startup/SplashScreen';
+import OnboardingScreen from './src/screens/startup/OnboardingScreen';
 
 const Stack = createStackNavigator();
 
@@ -17,7 +19,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="Auth"
+          initialRouteName="Splash"
           screenOptions={{
             headerShown: false,
             // Standard iOS-style slide animation for all screens
@@ -26,6 +28,10 @@ export default function App() {
             gestureDirection: 'horizontal',
           }}
         >
+          {/* 0. Startup Flow */}
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+
           {/* 1. Auth Stack 
             (Contains Login, SignUp, OTP, ResetPassword) 
           */}

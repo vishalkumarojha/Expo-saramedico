@@ -1,105 +1,175 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, TextInput, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity 
+import {
+    View, Text, TextInput, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity,
+    Alert, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import AdminBottomNavBar from '../../components/AdminBottomNavBar';
+import { teamAPI } from '../../services/api';
 
 export default function AdminInviteMemberScreen({ navigation }) {
-  const [selectedRole, setSelectedRole] = useState('Member'); // Default selection
+    const [selectedRole, setSelectedRole] = useState('member');
+    const [fullName, setFullName] = useState('');
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(false);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.contentContainer}>
-        
-        {/* Header */}
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-               <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Invite Members</Text>
-            <View style={{width: 24}} /> 
-        </View>
+    const handleInvite = async () => {
+        // Validation
+        if (!fullName.trim()) {
+            Alert.alert('Error', 'Please enter full name');
+            return;
+        }
+        if (!email.trim()) {
+            Alert.alert('Error', 'Please enter email address');
+            return;
+        }
+        if (!email.includes('@')) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Form Fields */}
-            <Text style={styles.label}>FULL NAME</Text>
-            <TextInput placeholder="Your name" style={styles.input} />
+        setLoading(true);
+        try {
+            // Split name into first and last
+            const nameParts = fullName.trim().split(' ');
+            const firstName = nameParts[0];
+            const lastName = nameParts.slice(1).join(' ') || '';
 
-            <Text style={styles.label}>EMAIL ADDRESS</Text>
-            <TextInput placeholder="yourmail@gmail.com" style={styles.input} />
+            // Call API POST /api/v1/team/invite
+            await teamAPI.inviteTeamMember({
+                email: email.trim(),
+                first_name: firstName,
+                last_name: lastName,
+                role: selectedRole,
+            });
 
-            {/* User Role Selection */}
-            <Text style={styles.sectionHeader}>User Role</Text>
-            <View style={styles.roleContainer}>
-                {/* Administrator Card */}
-                <RoleCard 
-                   title="Administrator" 
-                   sub="Full Platform Access" 
-                   icon="lock-closed" 
-                   isActive={selectedRole === 'Administrator'} 
-                   onPress={() => setSelectedRole('Administrator')}
-                   features={[
-                       {text: 'Manage team & billing', allowed: true},
-                       {text: 'Full patient record access', allowed: true},
-                       {text: 'Configure AI settings', allowed: true},
-                   ]}
-                />
-                
-                {/* Member Card */}
-                <RoleCard 
-                   title="Member" 
-                   sub="Clinician & Staff" 
-                   icon="lock-closed" 
-                   isActive={selectedRole === 'Member'} 
-                   onPress={() => setSelectedRole('Member')}
-                   features={[
-                       {text: 'View assigned patients', allowed: true},
-                       {text: 'Use AI diagnostic tool', allowed: true},
-                       {text: 'No billing access', allowed: false},
-                   ]}
-                />
-            </View>
+            Alert.alert(
+                'Success',
+                `Invitation sent to ${email}`,
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+            );
+        } catch (error) {
+            console.log('Invite error:', error);
+            const message = error.response?.data?.detail || 'Failed to send invitation';
+            Alert.alert('Error', message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            {/* Security Notice */}
-            <View style={styles.securityNotice}>
-                <Ionicons name="information-circle" size={24} color="#2196F3" style={{marginRight: 10}} />
-                <View style={{flex: 1}}>
-                    <Text style={styles.noticeTitle}>Security Notice</Text>
-                    <Text style={styles.noticeText}>
-                        The user will receive an email to join the Team. The invitation link expired in 48hours. They will be required to set up Two-Factor Authentication (2FA) upon their first login.
-                    </Text>
+    return (
+        <SafeAreaView style={styles.container}>
+            <View style={styles.contentContainer}>
+
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#333" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Invite Members</Text>
+                    <View style={{ width: 24 }} />
                 </View>
-            </View>
 
-            {/* Footer Buttons */}
-            <View style={styles.footerRow}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.saveBtn}>
-                    <Text style={styles.saveText}>Save Invite</Text>
-                </TouchableOpacity>
-            </View>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    {/* Form Fields */}
+                    <Text style={styles.label}>FULL NAME</Text>
+                    <TextInput
+                        placeholder="Enter full name"
+                        style={styles.input}
+                        value={fullName}
+                        onChangeText={setFullName}
+                        autoCapitalize="words"
+                    />
 
-        </ScrollView>
-      </View>
-      <AdminBottomNavBar navigation={navigation} activeTab="Records" />
-    </SafeAreaView>
-  );
+                    <Text style={styles.label}>EMAIL ADDRESS</Text>
+                    <TextInput
+                        placeholder="email@example.com"
+                        style={styles.input}
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                    />
+
+                    {/* User Role Selection */}
+                    <Text style={styles.sectionHeader}>User Role</Text>
+                    <View style={styles.roleContainer}>
+                        {/* Administrator Card */}
+                        <RoleCard
+                            title="Administrator"
+                            sub="Full Platform Access"
+                            icon="shield-checkmark"
+                            isActive={selectedRole === 'admin'}
+                            onPress={() => setSelectedRole('admin')}
+                            features={[
+                                { text: 'Manage team & billing', allowed: true },
+                                { text: 'Full patient record access', allowed: true },
+                                { text: 'Configure AI settings', allowed: true },
+                            ]}
+                        />
+
+                        {/* Member Card */}
+                        <RoleCard
+                            title="Member"
+                            sub="Clinician & Staff"
+                            icon="person"
+                            isActive={selectedRole === 'member'}
+                            onPress={() => setSelectedRole('member')}
+                            features={[
+                                { text: 'View assigned patients', allowed: true },
+                                { text: 'Use AI diagnostic tool', allowed: true },
+                                { text: 'No billing access', allowed: false },
+                            ]}
+                        />
+                    </View>
+
+                    {/* Security Notice */}
+                    <View style={styles.securityNotice}>
+                        <Ionicons name="information-circle" size={24} color="#2196F3" style={{ marginRight: 10 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.noticeTitle}>Security Notice</Text>
+                            <Text style={styles.noticeText}>
+                                The user will receive an email to join the Team. The invitation link expires in 48 hours. They will be required to set up Two-Factor Authentication (2FA) upon their first login.
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Footer Buttons */}
+                    <View style={styles.footerRow}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} disabled={loading}>
+                            <Text style={styles.cancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.saveBtn, loading && styles.saveBtnDisabled]}
+                            onPress={handleInvite}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator size="small" color="white" />
+                            ) : (
+                                <Text style={styles.saveText}>Send Invite</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+                </ScrollView>
+            </View>
+            <AdminBottomNavBar navigation={navigation} activeTab="Accounts" />
+        </SafeAreaView>
+    );
 }
 
 // Helper Component for Role Cards
 const RoleCard = ({ title, sub, icon, isActive, onPress, features }) => (
-    <TouchableOpacity 
-       style={[styles.roleCard, isActive && styles.roleCardActive]} 
-       onPress={onPress}
-       activeOpacity={0.8}
+    <TouchableOpacity
+        style={[styles.roleCard, isActive && styles.roleCardActive]}
+        onPress={onPress}
+        activeOpacity={0.8}
     >
         <View style={styles.roleHeader}>
-            <View style={styles.iconBox}>
-               <Ionicons name={icon} size={16} color="#333" />
+            <View style={[styles.iconBox, isActive && styles.iconBoxActive]}>
+                <Ionicons name={icon} size={16} color={isActive ? COLORS.primary : '#333'} />
             </View>
             <View>
                 <Text style={styles.roleTitle}>{title}</Text>
@@ -110,47 +180,49 @@ const RoleCard = ({ title, sub, icon, isActive, onPress, features }) => (
         <View style={styles.divider} />
 
         {features.map((f, i) => (
-            <View key={i} style={{flexDirection: 'row', alignItems: 'center', marginBottom: 6}}>
-                <Ionicons 
-                  name={f.allowed ? "checkmark" : "close"} 
-                  size={14} 
-                  color={f.allowed ? COLORS.success : '#999'} 
-                  style={{marginRight: 6}}
+            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Ionicons
+                    name={f.allowed ? "checkmark" : "close"}
+                    size={14}
+                    color={f.allowed ? COLORS.success : '#999'}
+                    style={{ marginRight: 6 }}
                 />
-                <Text style={{fontSize: 11, color: '#666'}}>{f.text}</Text>
+                <Text style={{ fontSize: 11, color: '#666' }}>{f.text}</Text>
             </View>
         ))}
     </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFC' },
-  contentContainer: { flex: 1, padding: 20 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold' },
+    container: { flex: 1, backgroundColor: '#F9FAFC' },
+    contentContainer: { flex: 1, padding: 20 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+    headerTitle: { fontSize: 18, fontWeight: 'bold' },
 
-  label: { fontSize: 12, fontWeight: 'bold', color: '#333', marginBottom: 8, textTransform: 'uppercase' },
-  input: { backgroundColor: 'white', borderRadius: 10, borderWidth: 1, borderColor: '#EEE', paddingHorizontal: 15, height: 50, marginBottom: 20 },
+    label: { fontSize: 12, fontWeight: 'bold', color: '#333', marginBottom: 8, textTransform: 'uppercase' },
+    input: { backgroundColor: 'white', borderRadius: 10, borderWidth: 1, borderColor: '#EEE', paddingHorizontal: 15, height: 50, marginBottom: 20, fontSize: 15 },
 
-  sectionHeader: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
-  roleContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  
-  roleCard: { width: '48%', backgroundColor: 'white', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#EEE' },
-  roleCardActive: { borderColor: COLORS.primary, borderWidth: 1.5 },
-  
-  roleHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  iconBox: { width: 30, height: 30, backgroundColor: '#E3F2FD', borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  roleTitle: { fontSize: 13, fontWeight: 'bold' },
-  roleSub: { fontSize: 10, color: '#666' },
-  
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginBottom: 10 },
+    sectionHeader: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
+    roleContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
 
-  securityNotice: { flexDirection: 'row', backgroundColor: '#E3F2FD', padding: 15, borderRadius: 12, marginBottom: 30 },
-  noticeTitle: { fontWeight: 'bold', fontSize: 13, marginBottom: 4, color: '#333' },
-  noticeText: { fontSize: 12, color: '#555', lineHeight: 18 },
+    roleCard: { width: '48%', backgroundColor: 'white', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#EEE' },
+    roleCardActive: { borderColor: COLORS.primary, borderWidth: 2 },
 
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 40 },
-  cancelText: { fontWeight: 'bold', color: '#333', fontSize: 16, marginLeft: 20 },
-  saveBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 30, paddingVertical: 12, borderRadius: 10 },
-  saveText: { color: 'white', fontWeight: 'bold' }
+    roleHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+    iconBox: { width: 30, height: 30, backgroundColor: '#F5F5F5', borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+    iconBoxActive: { backgroundColor: '#E3F2FD' },
+    roleTitle: { fontSize: 13, fontWeight: 'bold' },
+    roleSub: { fontSize: 10, color: '#666' },
+
+    divider: { height: 1, backgroundColor: '#F0F0F0', marginBottom: 10 },
+
+    securityNotice: { flexDirection: 'row', backgroundColor: '#E3F2FD', padding: 15, borderRadius: 12, marginBottom: 30 },
+    noticeTitle: { fontWeight: 'bold', fontSize: 13, marginBottom: 4, color: '#333' },
+    noticeText: { fontSize: 12, color: '#555', lineHeight: 18 },
+
+    footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 40 },
+    cancelText: { fontWeight: 'bold', color: '#333', fontSize: 16, marginLeft: 20 },
+    saveBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 30, paddingVertical: 14, borderRadius: 10, minWidth: 130, alignItems: 'center' },
+    saveBtnDisabled: { opacity: 0.7 },
+    saveText: { color: 'white', fontWeight: 'bold', fontSize: 15 }
 });

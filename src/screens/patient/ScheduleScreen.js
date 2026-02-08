@@ -30,8 +30,24 @@ export default function ScheduleScreen({ navigation }) {
     if (!isRefreshing) setLoading(true);
 
     try {
-      const response = await patientAPI.getAppointments();
-      setAppointments(response.data || []);
+      const response = await patientAPI.getMyAppointments();
+      const allAppointments = response.data || [];
+
+      // Filter out past accepted appointments
+      const now = new Date();
+      const filteredAppointments = allAppointments.filter(appointment => {
+        const appointmentDate = new Date(appointment.requested_date);
+
+        // Keep all pending and declined appointments (for history)
+        if (appointment.status !== 'accepted') {
+          return true;
+        }
+
+        // For accepted appointments, only show current or future ones
+        return appointmentDate >= now;
+      });
+
+      setAppointments(filteredAppointments);
     } catch (error) {
       console.error('Failed to load appointments:', error);
       const errorInfo = ErrorHandler.handleError(error);

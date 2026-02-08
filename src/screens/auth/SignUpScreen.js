@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomInput, CustomButton } from '../../components/CustomComponents';
 import { authAPI, storeTokens } from '../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SPECIALTIES = [
   'Cardiology', 'Pediatrics', 'Dermatology', 'Orthopedics',
@@ -25,13 +26,15 @@ export default function SignUpScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('patient');
+  const [role, setRole] = useState('doctor');
   const [specialty, setSpecialty] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [isChecked, setIsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [showSpecialtyPicker, setShowSpecialtyPicker] = useState(false);
+  const [showCustomSpecialty, setShowCustomSpecialty] = useState(false);
+  const [customSpecialty, setCustomSpecialty] = useState('');
 
   const handleSignUp = async () => {
     // Validation
@@ -75,16 +78,42 @@ export default function SignUpScreen({ navigation }) {
       const { access_token, refresh_token, user } = response.data;
       await storeTokens(access_token, refresh_token, user);
 
+      // Store doctor-specific data locally for immediate access
+      if (role === 'doctor') {
+        const doctorProfile = {
+          specialty: specialty || customSpecialty || 'General Practice',
+          license_number: licenseNumber,
+          phone: phone || null,
+          full_name: fullName,
+          email: email
+        };
+        await AsyncStorage.setItem('doctor_profile', JSON.stringify(doctorProfile));
+
+        // Sync specialty and license to backend via PATCH /doctor/profile
+        try {
+          const { default: api } = await import('../../services/api');
+          await api.patch('/doctor/profile', {
+            specialty: specialty || customSpecialty || 'General Practice',
+            license_number: licenseNumber
+          });
+        } catch (syncError) {
+          console.log('Profile sync will happen on next login:', syncError.message);
+        }
+      }
+
       Alert.alert(
         'Success',
         'Your account has been created successfully!',
         [
           {
             text: 'OK',
-            onPress: () => {
-              // Navigate based on role
+            onPress: async () => {
+              // Mark as first-time login for doctors
               if (user.role === 'doctor') {
+                await AsyncStorage.setItem('doctor_first_login', 'true');
                 navigation.replace('DoctorFlow');
+              } else if (user.role === 'hospital') {
+                navigation.replace('HospitalFlow');
               } else if (user.role === 'patient') {
                 navigation.replace('PatientFlow');
               } else {
@@ -107,17 +136,13 @@ export default function SignUpScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* Header: Back Button & Progress Bar */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <View style={styles.progressBarBg}>
-            <View style={styles.progressBarFill} />
+        {/* Logo Section - Matching Login */}
+        <View style={styles.headerCenter}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="medkit" size={40} color={COLORS.primary} />
+            <Text style={styles.headerTitle}>Saramedico</Text>
           </View>
         </View>
-
-        <Text style={styles.screenTitle}>Saramedico</Text>
 
         {/* Tabs: Login / Sign Up */}
         <View style={styles.tabContainer}>
@@ -144,7 +169,7 @@ export default function SignUpScreen({ navigation }) {
           </TouchableOpacity>
           {showRolePicker && (
             <View style={styles.dropdownList}>
-              {['patient', 'doctor', 'admin', 'hospital'].map((r) => (
+              {['doctor', 'hospital'].map((r) => (
                 <TouchableOpacity
                   key={r}
                   style={styles.dropdownItem}
@@ -202,23 +227,64 @@ export default function SignUpScreen({ navigation }) {
                 style={styles.dropdownTrigger}
                 onPress={() => setShowSpecialtyPicker(!showSpecialtyPicker)}
               >
-                <Text style={styles.dropdownText}>{specialty || 'Select specialty'}</Text>
+                <Text style={styles.dropdownText}>
+                  {showCustomSpecialty ? customSpecialty : (specialty || 'Select specialty')}
+                </Text>
                 <Ionicons name={showSpecialtyPicker ? "chevron-up" : "chevron-down"} size={20} color="#666" />
               </TouchableOpacity>
               {showSpecialtyPicker && (
                 <View style={styles.dropdownList}>
-                  {SPECIALTIES.map((spec) => (
+                  <ScrollView
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={true}
+                  >
+                    {SPECIALTIES.map((spec) => (
+                      <TouchableOpacity
+                        key={spec}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setSpecialty(spec);
+                          setShowSpecialtyPicker(false);
+                          setShowCustomSpecialty(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>{spec}</Text>
+                      </TouchableOpacity>
+                    ))}
+                    {/* Custom Specialty Option */}
                     <TouchableOpacity
-                      key={spec}
-                      style={styles.dropdownItem}
-                      onPress={() => { setSpecialty(spec); setShowSpecialtyPicker(false); }}
+                      style={[styles.dropdownItem, styles.customOption]}
+                      onPress={() => {
+                        setShowSpecialtyPicker(false);
+                        setShowCustomSpecialty(true);
+                        setSpecialty('');
+                      }}
                     >
-                      <Text style={styles.dropdownItemText}>{spec}</Text>
+                      <Text style={[styles.dropdownItemText, styles.customOptionText]}>
+                        I don't see my specialty
+                      </Text>
                     </TouchableOpacity>
-                  ))}
+                  </ScrollView>
                 </View>
               )}
             </View>
+
+            {/* Custom Specialty Input */}
+            {showCustomSpecialty && (
+              <>
+                <Text style={styles.label}>Enter Your Specialty</Text>
+                <CustomInput
+                  placeholder="e.g., Oncology, Endocrinology"
+                  icon="medical-outline"
+                  value={customSpecialty}
+                  onChangeText={(text) => {
+                    setCustomSpecialty(text);
+                    setSpecialty(text);
+                  }}
+                />
+              </>
+            )}
           </>
         )}
 
@@ -270,20 +336,17 @@ export default function SignUpScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
-  content: { padding: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: '#F4F9FF' },
+  content: { padding: 25, paddingBottom: 40 },
 
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  progressBarBg: { height: 6, width: 100, backgroundColor: '#E0E0E0', borderRadius: 3 },
-  progressBarFill: { height: '100%', width: '50%', backgroundColor: COLORS.primary, borderRadius: 3 },
+  headerCenter: { alignItems: 'center', marginBottom: 30, marginTop: 20 },
+  headerTitle: { fontSize: 26, fontWeight: 'bold', color: '#00A3FF', marginLeft: 10 },
 
-  screenTitle: { fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, color: '#333' },
-
-  tabContainer: { flexDirection: 'row', backgroundColor: '#F0F0F0', borderRadius: 25, padding: 4, marginBottom: 20 },
-  activeTab: { flex: 1, backgroundColor: COLORS.white, borderRadius: 20, paddingVertical: 10, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
-  inactiveTab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
-  activeTabText: { fontWeight: 'bold', color: '#333' },
-  inactiveTabText: { color: '#666' },
+  tabContainer: { flexDirection: 'row', backgroundColor: '#F0F2F5', borderRadius: 30, padding: 4, marginBottom: 20 },
+  activeTab: { flex: 1, backgroundColor: COLORS.primary, borderRadius: 25, paddingVertical: 12, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  inactiveTab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
+  activeTabText: { fontWeight: 'bold', color: 'white', fontSize: 16 },
+  inactiveTabText: { color: '#666', fontSize: 16 },
 
   label: { fontSize: 14, color: '#333', marginBottom: 8, marginTop: 10, fontWeight: '500' },
   helperText: { fontSize: 11, color: '#666', marginBottom: 10, marginTop: -10 },
@@ -300,10 +363,12 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 60, left: 0, right: 0,
     backgroundColor: 'white', borderRadius: 10, borderWidth: 1, borderColor: '#eee',
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1, shadowRadius: 5, elevation: 5, maxHeight: 200,
+    shadowOpacity: 0.1, shadowRadius: 5, elevation: 5, maxHeight: 250,
   },
   dropdownItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   dropdownItemText: { fontSize: 16, color: '#333' },
+  customOption: { borderBottomWidth: 0, borderTopWidth: 2, borderTopColor: '#E0E0E0' },
+  customOptionText: { color: COLORS.primary, fontWeight: '600' },
 
   checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 15 },
   checkbox: { width: 20, height: 20, borderWidth: 1, borderColor: '#ccc', borderRadius: 4, marginRight: 10, justifyContent: 'center', alignItems: 'center' },

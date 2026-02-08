@@ -1,32 +1,63 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 /**
  * Environment Configuration for SaraMedico App
  * 
  * Manages API base URLs and other environment-specific settings
+ * Supports both local development and AWS deployed APIs
  */
 
-// Determine the appropriate base URL based on platform
+/**
+ * Get environment variable with fallback
+ */
+const getEnvVar = (key, defaultValue = '') => {
+    return Constants.expoConfig?.extra?.[key] || process.env[key] || defaultValue;
+};
+
+/**
+ * Determine the appropriate base URL based on environment and platform
+ * 
+ * Environment Control:
+ * - Set API_ENVIRONMENT='aws' in .env to use AWS deployed API
+ * - Set API_ENVIRONMENT='local' in .env to use local development API
+ */
 const getBaseUrl = () => {
-    // For production, use environment variable or default production URL
-    if (__DEV__) {
-        // Development mode
-        // Your laptop's IP address on the WiFi network: 172.25.251.254
-        const LAPTOP_IP = '172.25.251.254';
-        const BACKEND_PORT = '8001'; // Change to 8001 if your backend runs on 8001
+    // Read environment configuration
+    const apiEnvironment = getEnvVar('API_ENVIRONMENT', 'aws').toLowerCase();
+    const awsApiUrl = getEnvVar('AWS_API_URL', 'http://65.0.98.170:8000');
+    const localApiHost = getEnvVar('LOCAL_API_HOST', 'localhost');
+    const localApiPort = getEnvVar('LOCAL_API_PORT', '8000');
+
+    let baseUrl;
+
+    if (apiEnvironment === 'aws') {
+        // Use AWS deployed API for all platforms
+        baseUrl = `${awsApiUrl}/api/v1`;
+        console.log('🌐 [API Config] Using AWS Deployed API');
+    } else {
+        // Use local development API with platform-specific handling
+        console.log('💻 [API Config] Using Local Development API');
 
         if (Platform.OS === 'android') {
             // Android emulator uses 10.0.2.2 to access host machine's localhost
-            return `http://10.0.2.2:${BACKEND_PORT}/api/v1`;
+            baseUrl = `http://10.0.2.2:${localApiPort}/api/v1`;
+            console.log('📱 [API Config] Platform: Android Emulator');
+        } else if (Platform.OS === 'ios') {
+            // iOS simulator can use localhost
+            baseUrl = `http://${localApiHost}:${localApiPort}/api/v1`;
+            console.log('📱 [API Config] Platform: iOS Simulator');
         } else {
-            // For iOS simulator, web, and REAL DEVICES (Expo Go on phone)
-            // Use your laptop's actual IP address
-            return `http://${LAPTOP_IP}:${BACKEND_PORT}/api/v1`;
+            // For physical devices, use the local host IP (should be your machine's WiFi IP)
+            baseUrl = `http://${localApiHost}:${localApiPort}/api/v1`;
+            console.log('📱 [API Config] Platform: Physical Device/Web');
         }
-    } else {
-        // Production mode - replace with your actual production API URL
-        return 'https://api.saramedico.com/api/v1';
     }
+
+    console.log(`✅ [API Config] Base URL: ${baseUrl}`);
+    console.log(`ℹ️  [API Config] To switch APIs, change API_ENVIRONMENT in .env file`);
+
+    return baseUrl;
 };
 
 // API Configuration

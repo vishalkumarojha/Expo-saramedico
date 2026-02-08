@@ -1,15 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, Image
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
+import { doctorAPI } from '../../services/api';
 
 export default function DoctorPatientDetailScreen({ route, navigation }) {
-  // Get patient data passed from directory
-  const { patient } = route.params || {};
-  const [activeTab, setActiveTab] = useState('Visits'); // 'Visits' or 'Documents'
+  const { patient, patientId } = route.params || {};
+  const [activeTab, setActiveTab] = useState('Visits');
+  const [loading, setLoading] = useState(false);
+  const [visits, setVisits] = useState([]);
+  const [documents, setDocuments] = useState([]);
+
+  useEffect(() => {
+    if (patientId || patient?.id) {
+      loadPatientDetails();
+    }
+  }, [patientId, patient?.id]);
+
+  const loadPatientDetails = async () => {
+    setLoading(true);
+    const id = patientId || patient?.id;
+
+    try {
+      // Load visits/records
+      try {
+        const visitsResponse = await doctorAPI.getRecords(id);
+        setVisits((visitsResponse.data || []).slice(0, 5)); // Top 5
+      } catch (err) {
+        console.log('No visits found');
+        setVisits([]);
+      }
+
+      // Load documents
+      try {
+        const docsResponse = await doctorAPI.getPatientDocuments(id);
+        const docsData = docsResponse.data?.documents || docsResponse.data;
+        setDocuments(Array.isArray(docsData) ? docsData : []);
+      } catch (err) {
+        console.log('No documents found');
+        setDocuments([]);
+      }
+    } catch (error) {
+      console.error('Error loading patient details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -21,21 +60,20 @@ export default function DoctorPatientDetailScreen({ route, navigation }) {
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Patient Profile</Text>
-          <View style={{ width: 24 }} />
+          <TouchableOpacity onPress={() => navigation.navigate('DoctorPostVisitScreen', { patient })}>
+            <Ionicons name="create-outline" size={24} color="#333" />
+          </TouchableOpacity>
         </View>
 
         {/* Profile Info */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarPlaceholder}>
-              <Ionicons name="camera" size={30} color="#999" />
-            </View>
-            <View style={styles.editBadge}>
-              <Ionicons name="pencil" size={12} color="white" />
+              <Ionicons name="person" size={40} color="#999" />
             </View>
           </View>
-          <Text style={styles.patientName}>{patient?.name || 'Sara Shetty'}</Text>
-          <Text style={styles.patientMeta}>35y Female - MRN {patient?.mrn || '89120'}</Text>
+          <Text style={styles.patientName}>{patient?.name || 'Unknown Patient'}</Text>
+          <Text style={styles.patientMeta}>MRN: {patient?.mrn || 'N/A'} - DOB: {patient?.dob || 'N/A'}</Text>
         </View>
 
         {/* Tab Switcher */}
@@ -55,12 +93,12 @@ export default function DoctorPatientDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Tab Content - Navigation passed to VisitsView */}
+        {/* Tab Content */}
         <View style={styles.tabContent}>
           {activeTab === 'Visits' ? (
-            <VisitsView navigation={navigation} />
+            <VisitsView navigation={navigation} visits={visits} loading={loading} />
           ) : (
-            <DocumentsView />
+            <DocumentsView documents={documents} loading={loading} />
           )}
         </View>
 
@@ -71,68 +109,85 @@ export default function DoctorPatientDetailScreen({ route, navigation }) {
 
 // --- SUB-COMPONENTS ---
 
-function VisitsView({ navigation }) {
+function VisitsView({ navigation, visits, loading }) {
+  if (loading) {
+    return (
+      <View style={{ padding: 40, alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  const visitsList = Array.isArray(visits) ? visits : [];
+
+  if (visitsList.length === 0) {
+    return (
+      <View style={{ padding: 40, alignItems: 'center' }}>
+        <Ionicons name="calendar-outline" size={50} color="#DDD" />
+        <Text style={{ marginTop: 15, fontSize: 14, color: '#999' }}>No visits recorded</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-      <Text style={styles.sectionLabel}>RECENT HISTORY</Text>
+      <Text style={styles.sectionLabel}>RECENT VISITS (LAST 5)</Text>
 
-      {/* Visit Card 1 */}
-      <View style={styles.visitCard}>
-        <View style={styles.visitHeader}>
-          <Text style={styles.visitDate}>OCT 14, 2023 - 2:30 PM</Text>
-          {/* LINKED VIEW BUTTON */}
-          <TouchableOpacity
-            style={styles.viewBtn}
-            onPress={() => navigation.navigate('DoctorPostVisitScreen')}
-          >
-            <Text style={styles.viewBtnText}>View</Text>
-          </TouchableOpacity>
+      {visitsList.map((visit, index) => (
+        <View key={visit.id || index} style={styles.visitCard}>
+          <View style={styles.visitHeader}>
+            <Text style={styles.visitDate}>
+              {visit.visit_date || visit.created_at || 'No date'}
+            </Text>
+            <TouchableOpacity
+              style={styles.viewBtn}
+              onPress={() => navigation.navigate('DoctorPostVisitScreen', { visit })}
+            >
+              <Text style={styles.viewBtnText}>View</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.visitTitle}>{visit.visit_type || visit.reason || 'General Visit'}</Text>
+          <Text style={styles.visitDesc} numberOfLines={3}>
+            {visit.notes || visit.description || 'No description available'}
+          </Text>
         </View>
-        <Text style={styles.visitTitle}>Cardiology Follow-up</Text>
-        <Text style={styles.visitDesc}>Patient reports reduced palpitations since starting the new routine.</Text>
-        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• BP is unstable</Text></View>
-        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• Frequent Fever</Text></View>
-      </View>
-
-      {/* Visit Card 2 */}
-      <View style={styles.visitCard}>
-        <View style={styles.visitHeader}>
-          <Text style={styles.visitDate}>SEPT 12, 2023 - 2:30 PM</Text>
-          {/* LINKED VIEW BUTTON */}
-          <TouchableOpacity
-            style={styles.viewBtn}
-            onPress={() => navigation.navigate('DoctorPostVisitScreen')}
-          >
-            <Text style={styles.viewBtnText}>View</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.visitTitle}>General Check-up</Text>
-        <Text style={styles.visitDesc}>Routine Checkup, Patient expressed concerns about knee pain during exercises.</Text>
-        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• High Blood Pressure</Text></View>
-        <View style={styles.bulletPoint}><Text style={styles.bulletText}>• No Fever</Text></View>
-      </View>
+      ))}
       <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
 
-function DocumentsView() {
+function DocumentsView({ documents, loading }) {
+  if (loading) {
+    return (
+      <View style={{ padding: 40, alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  const docsList = Array.isArray(documents) ? documents : [];
+
+  if (docsList.length === 0) {
+    return (
+      <View style={{ padding: 40, alignItems: 'center' }}>
+        <Ionicons name="document-outline" size={50} color="#DDD" />
+        <Text style={{ marginTop: 15, fontSize: 14, color: '#999' }}>No documents uploaded</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView showsVerticalScrollIndicator={false}>
-      <Text style={styles.sectionLabel}>RECENT DOCUMENTS</Text>
+      <Text style={styles.sectionLabel}>UPLOADED DOCUMENTS</Text>
 
-      <DocumentItem
-        title="Lab_Result_Bloodwork.pdf"
-        sub="Uploaded Oct 10 - 2.5 MB"
-      />
-      <DocumentItem
-        title="Routine_Check.pdf"
-        sub="Uploaded Sept 14 - 4.4 MB"
-      />
-      <DocumentItem
-        title="MRI_Scan_Report.pdf"
-        sub="Uploaded Aug 20 - 12 MB"
-      />
+      {docsList.map((doc, index) => (
+        <DocumentItem
+          key={doc.id || index}
+          title={doc.title || doc.filename || 'Document'}
+          sub={`Uploaded ${doc.uploaded_at || doc.created_at || 'Unknown date'}`}
+        />
+      ))}
     </ScrollView>
   );
 }
@@ -146,7 +201,7 @@ const DocumentItem = ({ title, sub }) => (
       <Text style={styles.docTitle}>{title}</Text>
       <Text style={styles.docSub}>{sub}</Text>
     </View>
-    <Ionicons name="ellipsis-vertical" size={20} color="#999" />
+    <Ionicons name="eye-outline" size={20} color="#999" />
   </TouchableOpacity>
 );
 
@@ -158,8 +213,7 @@ const styles = StyleSheet.create({
 
   profileHeader: { alignItems: 'center', marginBottom: 25 },
   avatarContainer: { position: 'relative', marginBottom: 15 },
-  avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#F0F2F5', justifyContent: 'center', alignItems: 'center' },
-  editBadge: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'white' },
+  avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#F0F2F5', justifyItems: 'center', alignItems: 'center', justifyContent: 'center' },
   patientName: { fontSize: 20, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 4 },
   patientMeta: { fontSize: 13, color: '#999' },
 
@@ -178,9 +232,7 @@ const styles = StyleSheet.create({
   viewBtn: { backgroundColor: '#E3F2FD', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 6 },
   viewBtnText: { color: COLORS.primary, fontSize: 11, fontWeight: 'bold' },
   visitTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 6 },
-  visitDesc: { fontSize: 13, color: '#555', lineHeight: 18, marginBottom: 10 },
-  bulletPoint: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  bulletText: { fontSize: 13, color: '#444' },
+  visitDesc: { fontSize: 13, color: '#555', lineHeight: 18 },
 
   docItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#EEE' },
   pdfIcon: { width: 40, height: 40, backgroundColor: '#FFEBEE', borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 15 },

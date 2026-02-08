@@ -1,24 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-   View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Switch
+   View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Switch, ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import SignOutModal from '../../components/SignOutModal';
+import { getUserData } from '../../services/api';
 
 export default function DoctorSettingsScreen({ navigation }) {
-   const [is2FAEnabled, setIs2FAEnabled] = useState(true);
-   const [isFaceIDEnabled, setIsFaceIDEnabled] = useState(true);
+   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
    const [showSignOut, setShowSignOut] = useState(false);
+   const [loading, setLoading] = useState(true);
+   const [doctorData, setDoctorData] = useState({
+      name: 'Doctor',
+      specialty: 'General Practice',
+      avatar: null,
+      email: '',
+      phone: '',
+      licenseNumber: ''
+   });
+
+   useEffect(() => {
+      loadDoctorProfile();
+   }, []);
+
+   const loadDoctorProfile = async () => {
+      try {
+         const userData = await getUserData();
+         if (userData) {
+            const cleanName = userData.full_name ? userData.full_name.replace(/^Dr\.\s*/i, '') : 'Doctor';
+            setDoctorData({
+               name: cleanName,
+               specialty: userData.specialty || 'General Practice',
+               avatar: userData.avatar_url || null,
+               email: userData.email || '',
+               phone: userData.phone || '',
+               licenseNumber: userData.license_number || 'Not provided'
+            });
+            setIs2FAEnabled(userData.mfa_enabled || false);
+         }
+      } catch (error) {
+         console.error('Error loading doctor profile:', error);
+      } finally {
+         setLoading(false);
+      }
+   };
 
    const handleSignOut = () => {
       setShowSignOut(false);
-      // FIX: Reset to 'Auth' stack
       navigation.reset({
          index: 0,
          routes: [{ name: 'Auth' }],
       });
+   };
+
+   const handle2FAToggle = async (value) => {
+      setIs2FAEnabled(value);
+      // TODO: Implement MFA enable/disable API call
+      console.log('2FA toggled:', value);
    };
 
    return (
@@ -32,58 +72,136 @@ export default function DoctorSettingsScreen({ navigation }) {
                <View style={{ width: 24 }} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-               <View style={styles.profileHeader}>
-                  <View style={styles.avatarContainer}>
-                     <Image source={{ uri: 'https://i.pravatar.cc/100?img=11' }} style={styles.avatar} />
-                     <View style={styles.editBadge}>
-                        <Ionicons name="pencil" size={14} color="white" />
+            {loading ? (
+               <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+               </View>
+            ) : (
+               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                  {/* Profile Header */}
+                  <View style={styles.profileHeader}>
+                     <View style={styles.avatarContainer}>
+                        {doctorData.avatar ? (
+                           <Image source={{ uri: doctorData.avatar }} style={styles.avatar} />
+                        ) : (
+                           <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                              <Ionicons name="person" size={40} color="#999" />
+                           </View>
+                        )}
+                        <View style={styles.editBadge}>
+                           <Ionicons name="pencil" size={14} color="white" />
+                        </View>
+                     </View>
+                     <Text style={styles.nameText}>Dr. {doctorData.name}</Text>
+                     <Text style={styles.roleText}>{doctorData.specialty.toUpperCase()}</Text>
+                  </View>
+
+                  {/* SERVICES Section */}
+                  <Text style={styles.sectionLabel}>SERVICES</Text>
+                  <View style={styles.card}>
+                     <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => navigation.navigate('DoctorAvailabilityScreen')}
+                     >
+                        <View style={styles.iconBox}><Ionicons name="time-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Availability</Text>
+                           <Text style={styles.itemSub}>Set your working hours</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#CCC" />
+                     </TouchableOpacity>
+
+                     <View style={styles.divider} />
+
+                     <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => navigation.navigate('DoctorCredentialsScreen', { licenseNumber: doctorData.licenseNumber })}
+                     >
+                        <View style={styles.iconBox}><Ionicons name="school-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Credentials</Text>
+                           <Text style={styles.itemSub}>{doctorData.licenseNumber}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#CCC" />
+                     </TouchableOpacity>
+
+                     <View style={styles.divider} />
+
+                     <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => navigation.navigate('DoctorServicesScreen', { specialty: doctorData.specialty })}
+                     >
+                        <View style={styles.iconBox}><Ionicons name="medkit-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Services Available</Text>
+                           <Text style={styles.itemSub}>{doctorData.specialty}</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#CCC" />
+                     </TouchableOpacity>
+                  </View>
+
+                  {/* PERSONAL INFORMATION Section */}
+                  <Text style={styles.sectionLabel}>SECURITY</Text>
+                  <View style={styles.card}>
+                     <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => navigation.navigate('DoctorChangePasswordScreen')}
+                     >
+                        <View style={styles.iconBox}><Ionicons name="lock-closed-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Password</Text>
+                           <Text style={styles.itemSub}>Change via OTP verification</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#CCC" />
+                     </TouchableOpacity>
+
+                     <View style={styles.divider} />
+
+                     <View style={styles.row}>
+                        <View style={styles.iconBox}><Ionicons name="shield-checkmark-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Two-Factor Auth (MFA)</Text>
+                           <Text style={styles.itemSub}>{is2FAEnabled ? 'OTP required on login' : 'Disabled'}</Text>
+                        </View>
+                        <Switch
+                           value={is2FAEnabled}
+                           onValueChange={handle2FAToggle}
+                           trackColor={{ false: "#DDD", true: COLORS.primary }}
+                           thumbColor="white"
+                        />
                      </View>
                   </View>
-                  <Text style={styles.nameText}>Dr. Rajeev Bhatia</Text>
-                  <Text style={styles.roleText}>CARDIOLOGY</Text>
-               </View>
 
-               <Text style={styles.sectionLabel}>SERVICES</Text>
-               <View style={styles.card}>
-                  <SettingItem icon="time-outline" title="Availability" sub="10:00 - 6:00" hasArrow />
-                  <View style={styles.divider} />
-                  <SettingItem icon="school-outline" title="Credentials" sub="DM Cardiology" hasArrow />
-                  <View style={styles.divider} />
-                  <SettingItem icon="medkit-outline" title="Services Available" sub="Heart Disease Diagnosis" hasArrow />
-               </View>
+                  {/* CONTACT INFORMATION Section */}
+                  <Text style={styles.sectionLabel}>CONTACT INFORMATION</Text>
+                  <View style={styles.card}>
+                     <View style={styles.row}>
+                        <View style={styles.iconBox}><Ionicons name="mail-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Email</Text>
+                           <Text style={styles.itemSub}>{doctorData.email || 'Not provided'}</Text>
+                        </View>
+                     </View>
 
-               <Text style={styles.sectionLabel}>PERSONAL INFORMATION</Text>
-               <View style={styles.card}>
-                  <SettingItem icon="lock-closed-outline" title="Password" sub="Last changed 30 days ago" hasArrow />
-                  <View style={styles.divider} />
-                  <View style={styles.row}>
-                     <View style={styles.iconBox}><Ionicons name="shield-checkmark-outline" size={20} color="#555" /></View>
-                     <View style={{ flex: 1 }}><Text style={styles.itemTitle}>Two-Factor Auth</Text><Text style={styles.itemSub}>Enabled (SMS)</Text></View>
-                     <Switch value={is2FAEnabled} onValueChange={setIs2FAEnabled} trackColor={{ false: "#DDD", true: COLORS.primary }} thumbColor="white" />
+                     <View style={styles.divider} />
+
+                     <View style={styles.row}>
+                        <View style={styles.iconBox}><Ionicons name="call-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Phone</Text>
+                           <Text style={styles.itemSub}>{doctorData.phone || 'Not provided'}</Text>
+                        </View>
+                     </View>
                   </View>
-                  <View style={styles.divider} />
-                  <View style={styles.row}>
-                     <View style={styles.iconBox}><Ionicons name="happy-outline" size={20} color="#555" /></View>
-                     <View style={{ flex: 1 }}><Text style={styles.itemTitle}>Face ID</Text><Text style={styles.itemSub}>Login enabled</Text></View>
-                     <Switch value={isFaceIDEnabled} onValueChange={setIsFaceIDEnabled} trackColor={{ false: "#DDD", true: COLORS.primary }} thumbColor="white" />
-                  </View>
-               </View>
 
-               <Text style={styles.sectionLabel}>CONTACT INFORMATION</Text>
-               <View style={styles.card}>
-                  <SettingItem icon="mail-outline" title="Email" sub="rajeev.bhatia@hospital.org" hasArrow />
-                  <View style={styles.divider} />
-                  <SettingItem icon="call-outline" title="Phone" sub="+1 (555) 123-4567" hasArrow />
-               </View>
+                  <Text style={styles.footerNote}>Contact administrator to change email or phone</Text>
 
-               <Text style={styles.footerNote}>To Change the contact details contact the administrator</Text>
-
-               <TouchableOpacity style={styles.signOutBtn} onPress={() => setShowSignOut(true)}>
-                  <Ionicons name="log-out-outline" size={20} color="#D32F2F" style={{ marginRight: 8 }} />
-                  <Text style={styles.signOutText}>Sign Out</Text>
-               </TouchableOpacity>
-            </ScrollView>
+                  <TouchableOpacity style={styles.signOutBtn} onPress={() => setShowSignOut(true)}>
+                     <Ionicons name="log-out-outline" size={20} color="#D32F2F" style={{ marginRight: 8 }} />
+                     <Text style={styles.signOutText}>Sign Out</Text>
+                  </TouchableOpacity>
+               </ScrollView>
+            )}
          </View>
 
          <SignOutModal visible={showSignOut} onCancel={() => setShowSignOut(false)} onConfirm={handleSignOut} />
@@ -91,23 +209,17 @@ export default function DoctorSettingsScreen({ navigation }) {
    );
 }
 
-const SettingItem = ({ icon, title, sub, hasArrow }) => (
-   <TouchableOpacity style={styles.row}>
-      <View style={styles.iconBox}><Ionicons name={icon} size={20} color="#555" /></View>
-      <View style={{ flex: 1 }}><Text style={styles.itemTitle}>{title}</Text><Text style={styles.itemSub}>{sub}</Text></View>
-      {hasArrow && <Ionicons name="chevron-forward" size={18} color="#CCC" />}
-   </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
    container: { flex: 1, backgroundColor: '#F9FAFC' },
    content: { flex: 1, padding: 20 },
    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
+   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
    scrollContent: { paddingBottom: 40 },
    profileHeader: { alignItems: 'center', marginBottom: 30 },
    avatarContainer: { position: 'relative', marginBottom: 15 },
    avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#E0E0E0' },
+   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
    editBadge: { position: 'absolute', bottom: 0, right: 0, width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'white' },
    nameText: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 4 },
    roleText: { fontSize: 12, color: '#999', letterSpacing: 1, fontWeight: '600' },

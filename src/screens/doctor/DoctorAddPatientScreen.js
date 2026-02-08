@@ -1,18 +1,94 @@
 import React, { useState } from 'react';
 import {
-   View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Image
+   View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Modal, Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomButton } from '../../components/CustomComponents';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import api from '../../services/api';
 
-export default function DoctorAddPatientScreen({ navigation }) {
+const GENDERS = ['Male', 'Female', 'Other'];
 
-   const handleSave = () => {
-      // Logic to save patient would go here
-      navigation.goBack(); // Return to Directory
+export default function DoctorAddPatientScreen({ navigation, route }) {
+   const [fullName, setFullName] = useState('');
+   const [email, setEmail] = useState('');
+   const [password, setPassword] = useState('');
+   const [phone, setPhone] = useState('');
+   const [dateOfBirth, setDateOfBirth] = useState(new Date());
+   const [showDatePicker, setShowDatePicker] = useState(false);
+   const [gender, setGender] = useState('');
+   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+   const [address, setAddress] = useState('');
+   const [medicalHistory, setMedicalHistory] = useState('');
+   const [loading, setLoading] = useState(false);
+
+   const calculateAge = (dob) => {
+      const today = new Date();
+      const birthDate = new Date(dob);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+         age--;
+      }
+      return age;
    };
+
+   const formatDate = (date) => {
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${month}/${day}/${year}`;
+   };
+
+   const handleDateChange = (event, selectedDate) => {
+      setShowDatePicker(Platform.OS === 'ios');
+      if (selectedDate) {
+         setDateOfBirth(selectedDate);
+      }
+   };
+
+   const handleSave = async () => {
+      // Validation
+      if (!fullName || !email || !password || !gender || !dateOfBirth) {
+         Alert.alert('Error', 'Please fill in all required fields (Name, Email, Password, Gender, DOB)');
+         return;
+      }
+
+      if (password.length < 8) {
+         Alert.alert('Error', 'Password must be at least 8 characters long');
+         return;
+      }
+
+      setLoading(true);
+      try {
+         // Create patient via backend with user account
+         const response = await api.post('/doctor/create-patient', {
+            full_name: fullName,
+            email: email,
+            password: password,
+            phone_number: phone,
+            date_of_birth: dateOfBirth.toISOString().split('T')[0],
+            gender: gender.toLowerCase(),
+            address: address,
+            medical_history: medicalHistory,
+         });
+
+         Alert.alert(
+            'Success',
+            `Patient ${fullName} created successfully!\n\nLogin Credentials:\nEmail: ${email}\nPassword: ${password}\n\nMRN: ${response.data.mrn}`,
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+         );
+      } catch (error) {
+         console.error('Error adding patient:', error);
+         Alert.alert('Error', error.response?.data?.detail || 'Failed to add patient. Please try again.');
+      } finally {
+         setLoading(false);
+      }
+   };
+
+   const age = dateOfBirth ? calculateAge(dateOfBirth) : 0;
 
    return (
       <SafeAreaView style={styles.container}>
@@ -31,36 +107,12 @@ export default function DoctorAddPatientScreen({ navigation }) {
 
             <ScrollView showsVerticalScrollIndicator={false}>
 
-               {/* Import EMR Card */}
-               <View style={styles.emrCard}>
-                  <View style={styles.emrHeader}>
-                     <View style={styles.emrIconBox}>
-                        <Ionicons name="download-outline" size={20} color="#2196F3" />
-                     </View>
-                     <View style={{ flex: 1 }}>
-                        <Text style={styles.emrTitle}>Import from EMR</Text>
-                        <Text style={styles.emrSub}>Connect to Epic, Cerner, or Allscripts to auto populate patient data.</Text>
-                     </View>
-                  </View>
-                  <TouchableOpacity style={styles.syncBtn}>
-                     <Ionicons name="sync" size={16} color="#333" style={{ marginRight: 6 }} />
-                     <Text style={styles.syncBtnText}>Sync Patient Details</Text>
-                  </TouchableOpacity>
-               </View>
-
-               {/* Divider */}
-               <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>OR ENTER MANUALLY</Text>
-                  <View style={styles.dividerLine} />
-               </View>
-
                {/* Photo Upload */}
                <View style={styles.photoContainer}>
                   <View style={styles.photoCircle}>
-                     <Ionicons name="camera" size={30} color="#999" />
+                     <Ionicons name="person" size={40} color="#999" />
                      <View style={styles.editBadge}>
-                        <Ionicons name="pencil" size={12} color="white" />
+                        <Ionicons name="camera" size={14} color="white" />
                      </View>
                   </View>
                </View>
@@ -68,40 +120,152 @@ export default function DoctorAddPatientScreen({ navigation }) {
                {/* Form Fields */}
                <Text style={styles.sectionLabel}>PERSONAL INFORMATION</Text>
 
-               <Text style={styles.label}>Full Name</Text>
-               <TextInput placeholder="Your Name" style={styles.input} />
+               <Text style={styles.label}>Full Name *</Text>
+               <TextInput
+                  placeholder="Enter patient full name"
+                  style={styles.input}
+                  value={fullName}
+                  onChangeText={setFullName}
+               />
+
+               <Text style={styles.label}>Email Address *</Text>
+               <TextInput
+                  placeholder="patient@example.com"
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+               />
+
+               <Text style={styles.label}>Password *</Text>
+               <TextInput
+                  placeholder="Set login password for patient"
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+               />
+
+               <Text style={styles.label}>Phone Number</Text>
+               <TextInput
+                  placeholder="+1-555-0123"
+                  style={styles.input}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+               />
 
                <View style={styles.row}>
                   <View style={{ flex: 1, marginRight: 10 }}>
-                     <Text style={styles.label}>Date of Birth</Text>
-                     <View style={styles.dateInput}>
-                        <Text style={{ color: '#999' }}>mm/dd/yyyy</Text>
+                     <Text style={styles.label}>Date of Birth *</Text>
+                     <TouchableOpacity
+                        style={styles.dateInput}
+                        onPress={() => setShowDatePicker(true)}
+                     >
+                        <Text style={{ color: '#333' }}>{formatDate(dateOfBirth)}</Text>
                         <Ionicons name="calendar-outline" size={18} color="#999" />
-                     </View>
+                     </TouchableOpacity>
                   </View>
                   <View style={{ flex: 1, marginLeft: 10 }}>
-                     <Text style={styles.label}>Gender</Text>
+                     <Text style={styles.label}>Age</Text>
                      <View style={styles.dateInput}>
-                        <Text style={{ color: '#333' }}>Select</Text>
-                        <Ionicons name="chevron-down" size={18} color="#999" />
+                        <Text style={{ color: '#333', fontWeight: '600' }}>{age} years</Text>
                      </View>
                   </View>
                </View>
 
-               <Text style={[styles.sectionLabel, { marginTop: 25 }]}>CLINICAL IDENTIFIERS</Text>
+               {showDatePicker && (
+                  <DateTimePicker
+                     value={dateOfBirth}
+                     mode="date"
+                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                     onChange={handleDateChange}
+                     maximumDate={new Date()}
+                  />
+               )}
 
-               <Text style={styles.label}>MRN (Medical Record Number)</Text>
-               <View style={styles.iconInput}>
-                  <Ionicons name="card-outline" size={20} color="#999" style={{ marginRight: 10 }} />
-                  <TextInput placeholder="#######" style={{ flex: 1 }} />
-               </View>
+               <Text style={styles.label}>Gender *</Text>
+               <TouchableOpacity
+                  style={styles.dateInput}
+                  onPress={() => setShowGenderDropdown(true)}
+               >
+                  <Text style={{ color: gender ? '#333' : '#999' }}>
+                     {gender || 'Select gender'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#999" />
+               </TouchableOpacity>
+
+               <Text style={[styles.sectionLabel, { marginTop: 25 }]}>ADDITIONAL INFORMATION</Text>
+
+               <Text style={styles.label}>Address</Text>
+               <TextInput
+                  placeholder="Street address, city, state, ZIP"
+                  style={[styles.input, { height: 60 }]}
+                  value={address}
+                  onChangeText={setAddress}
+                  multiline
+               />
+
+               <Text style={styles.label}>Medical History</Text>
+               <TextInput
+                  placeholder="Previous conditions, allergies, medications..."
+                  style={[styles.input, { height: 80 }]}
+                  value={medicalHistory}
+                  onChangeText={setMedicalHistory}
+                  multiline
+               />
 
                <View style={{ height: 100 }} />
             </ScrollView>
 
+            {/* Gender Dropdown Modal */}
+            <Modal
+               visible={showGenderDropdown}
+               transparent
+               animationType="slide"
+               onRequestClose={() => setShowGenderDropdown(false)}
+            >
+               <View style={styles.modalOverlay}>
+                  <TouchableOpacity
+                     style={styles.modalBackdrop}
+                     onPress={() => setShowGenderDropdown(false)}
+                  />
+                  <View style={styles.modalContent}>
+                     <Text style={styles.modalTitle}>Select Gender</Text>
+                     {GENDERS.map((g) => (
+                        <TouchableOpacity
+                           key={g}
+                           style={styles.genderOption}
+                           onPress={() => {
+                              setGender(g);
+                              setShowGenderDropdown(false);
+                           }}
+                        >
+                           <Text style={styles.genderText}>{g}</Text>
+                           {gender === g && (
+                              <Ionicons name="checkmark" size={20} color={COLORS.primary} />
+                           )}
+                        </TouchableOpacity>
+                     ))}
+                     <TouchableOpacity
+                        style={styles.cancelBtn}
+                        onPress={() => setShowGenderDropdown(false)}
+                     >
+                        <Text style={styles.cancelBtnText}>Cancel</Text>
+                     </TouchableOpacity>
+                  </View>
+               </View>
+            </Modal>
+
             {/* Footer Button */}
             <View style={styles.footer}>
-               <CustomButton title="Save" onPress={handleSave} />
+               <CustomButton
+                  title={loading ? 'Saving...' : 'Save Patient'}
+                  onPress={handleSave}
+                  disabled={loading}
+               />
             </View>
 
          </View>
@@ -117,18 +281,6 @@ const styles = StyleSheet.create({
    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
    cancelText: { color: COLORS.primary, fontWeight: '600' },
 
-   emrCard: { backgroundColor: 'white', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#EEE', marginBottom: 25 },
-   emrHeader: { flexDirection: 'row', marginBottom: 15 },
-   emrIconBox: { width: 36, height: 36, backgroundColor: '#E3F2FD', borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-   emrTitle: { fontSize: 14, fontWeight: 'bold', color: '#1A1A1A' },
-   emrSub: { fontSize: 11, color: '#666', marginTop: 2, lineHeight: 16 },
-   syncBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 10, borderWidth: 1, borderColor: '#DDD', borderRadius: 8 },
-   syncBtnText: { fontSize: 13, fontWeight: '600', color: '#333' },
-
-   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
-   dividerLine: { flex: 1, height: 1, backgroundColor: '#DDD' },
-   dividerText: { marginHorizontal: 10, fontSize: 11, color: '#999', fontWeight: '600' },
-
    photoContainer: { alignItems: 'center', marginBottom: 30 },
    photoCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#F0F2F5', justifyContent: 'center', alignItems: 'center', position: 'relative' },
    editBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: COLORS.primary, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'white' },
@@ -139,9 +291,16 @@ const styles = StyleSheet.create({
    input: { backgroundColor: 'white', borderWidth: 1, borderColor: '#EEE', borderRadius: 8, paddingHorizontal: 15, height: 48, marginBottom: 20 },
 
    row: { flexDirection: 'row' },
-   dateInput: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#EEE', borderRadius: 8, paddingHorizontal: 15, height: 48 },
+   dateInput: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#EEE', borderRadius: 8, paddingHorizontal: 15, height: 48, marginBottom: 20 },
 
-   iconInput: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#EEE', borderRadius: 8, paddingHorizontal: 15, height: 48 },
+   footer: { position: 'absolute', bottom: 20, left: 20, right: 20 },
 
-   footer: { position: 'absolute', bottom: 20, left: 20, right: 20 }
+   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+   modalBackdrop: { flex: 1 },
+   modalContent: { backgroundColor: 'white', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
+   modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+   genderOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+   genderText: { fontSize: 16, color: '#333' },
+   cancelBtn: { marginTop: 15, padding: 15, alignItems: 'center' },
+   cancelBtnText: { fontSize: 16, color: COLORS.primary, fontWeight: '600' }
 });

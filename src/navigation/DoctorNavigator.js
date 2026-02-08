@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ActivityIndicator, View } from 'react-native';
 
 // Onboarding
 import DoctorSpecialtyScreen from '../screens/doctor/DoctorSpecialtyScreen';
 import DoctorMicrophoneTestScreen from '../screens/doctor/DoctorMicrophoneTestScreen';
-import DoctorUploadScreen from '../screens/doctor/DoctorUploadScreen';
-import DoctorAnalyzedScreen from '../screens/doctor/DoctorAnalyzedScreen';
 
 // Dashboard & Main
 import DoctorDashboard from '../screens/doctor/DoctorDashboard';
@@ -27,23 +27,59 @@ import DoctorAlertsScreen from '../screens/doctor/DoctorAlertsScreen';
 // Shared
 import VideoCallScreen from '../screens/VideoCallScreen';
 
+// Settings Screens
+import DoctorAvailabilityScreen from '../screens/doctor/DoctorAvailabilityScreen';
+import DoctorCredentialsScreen from '../screens/doctor/DoctorCredentialsScreen';
+import DoctorServicesScreen from '../screens/doctor/DoctorServicesScreen';
+import DoctorChangePasswordScreen from '../screens/doctor/DoctorChangePasswordScreen';
+
 const Stack = createStackNavigator();
 
 export default function DoctorNavigator() {
+  const [initialRoute, setInitialRoute] = useState(null);
+
+  useEffect(() => {
+    checkFirstLogin();
+  }, []);
+
+  const checkFirstLogin = async () => {
+    try {
+      const isFirstLogin = await AsyncStorage.getItem('doctor_first_login');
+      if (isFirstLogin === 'true') {
+        // First time login - go through onboarding
+        setInitialRoute('DoctorSpecialty');
+        // Clear the flag so next time they go to dashboard
+        await AsyncStorage.removeItem('doctor_first_login');
+      } else {
+        // Returning user - go straight to dashboard
+        setInitialRoute('DoctorDashboard');
+      }
+    } catch (error) {
+      console.error('Error checking first login:', error);
+      setInitialRoute('DoctorDashboard');
+    }
+  };
+
+  if (!initialRoute) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#00A3FF" />
+      </View>
+    );
+  }
+
   return (
     <Stack.Navigator
-      initialRouteName="DoctorSpecialty" // Maps to SpecialtyScreen
+      initialRouteName={initialRoute}
       screenOptions={{
         headerShown: false,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
-      {/* 1. Onboarding Flow */}
+      {/* 1. Onboarding Flow - No Upload Screen */}
       <Stack.Screen name="DoctorSpecialty" component={DoctorSpecialtyScreen} />
       <Stack.Screen name="DoctorSpecialtyScreen" component={DoctorSpecialtyScreen} />
       <Stack.Screen name="DoctorMicrophoneTestScreen" component={DoctorMicrophoneTestScreen} />
-      <Stack.Screen name="DoctorUploadScreen" component={DoctorUploadScreen} />
-      <Stack.Screen name="DoctorAnalyzedScreen" component={DoctorAnalyzedScreen} />
 
       {/* 2. Main Dashboard */}
       <Stack.Screen name="DoctorDashboard" component={DoctorDashboard} />
@@ -66,6 +102,12 @@ export default function DoctorNavigator() {
 
       {/* Shared */}
       <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} />
+
+      {/* Settings Detail Screens */}
+      <Stack.Screen name="DoctorAvailabilityScreen" component={DoctorAvailabilityScreen} />
+      <Stack.Screen name="DoctorCredentialsScreen" component={DoctorCredentialsScreen} />
+      <Stack.Screen name="DoctorServicesScreen" component={DoctorServicesScreen} />
+      <Stack.Screen name="DoctorChangePasswordScreen" component={DoctorChangePasswordScreen} />
     </Stack.Navigator>
   );
 }

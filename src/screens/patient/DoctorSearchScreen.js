@@ -6,194 +6,163 @@ import {
     FlatList,
     TouchableOpacity,
     ActivityIndicator,
-    Alert,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Searchbar, Card, Button, Avatar, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { patientAPI } from '../../services/api';
-import ErrorHandler from '../../services/errorHandler';
+import { COLORS } from '../../constants/theme';
+import BottomNavBar from '../../components/BottomNavBar';
 
 /**
  * Doctor Search Screen
- * 
- * Allows patients to search for doctors by specialty or name
+ * Shows all doctors immediately and allows search filtering
  */
 export default function DoctorSearchScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [specialty, setSpecialty] = useState('');
-    const [doctors, setDoctors] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [searched, setSearched] = useState(false);
+    const [allDoctors, setAllDoctors] = useState([]);
+    const [filteredDoctors, setFilteredDoctors] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    /**
-     * Search for doctors
-     */
-    const searchDoctors = async () => {
-        if (!searchQuery && !specialty) {
-            Alert.alert('Search Required', 'Please enter a doctor name or select a specialty');
-            return;
-        }
+    useEffect(() => {
+        loadAllDoctors();
+    }, []);
 
+    useEffect(() => {
+        filterDoctors();
+    }, [searchQuery, allDoctors]);
+
+    const loadAllDoctors = async () => {
         setLoading(true);
-        setSearched(true);
-
         try {
-            const params = {};
-            if (searchQuery) params.query = searchQuery;
-            if (specialty) params.specialty = specialty;
-
-            const response = await patientAPI.searchDoctors(params);
-            setDoctors(response.data.results || []);
+            const response = await patientAPI.searchDoctors({ query: '' });
+            const doctorsList = response.data?.results || response.data || [];
+            setAllDoctors(doctorsList);
+            setFilteredDoctors(doctorsList);
         } catch (error) {
-            console.error('Search error:', error);
-            const errorInfo = ErrorHandler.handleError(error);
-            Alert.alert('Search Failed', errorInfo.message);
+            console.error('Error loading doctors:', error);
+            setAllDoctors([]);
+            setFilteredDoctors([]);
         } finally {
             setLoading(false);
         }
     };
 
-    /**
-     * Handle specialty filter
-     */
-    const filterBySpecialty = (selectedSpecialty) => {
-        setSpecialty(selectedSpecialty);
-        // Auto-search when specialty is selected
-        setTimeout(() => {
-            searchDoctors();
-        }, 100);
+    const filterDoctors = () => {
+        if (!searchQuery.trim()) {
+            setFilteredDoctors(allDoctors);
+            return;
+        }
+
+        const query = searchQuery.toLowerCase();
+        const filtered = allDoctors.filter(doctor => {
+            const name = (doctor.full_name || doctor.name || '').toLowerCase();
+            const specialty = (doctor.specialty || '').toLowerCase();
+            return name.includes(query) || specialty.includes(query);
+        });
+        setFilteredDoctors(filtered);
     };
 
-    /**
-     * Navigate to doctor profile or booking
-     */
     const handleDoctorPress = (doctor) => {
         navigation.navigate('AppointmentBooking', { doctor });
     };
 
-    /**
-     * Render doctor card
-     */
+    const getInitials = (name) => {
+        if (!name) return 'DR';
+        const parts = name.split(' ');
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
+
+    const getAvatarColor = (name) => {
+        const colors = ['#4CAF50', '#2196F3', '#9C27B0', '#FF5722', '#00BCD4', '#E91E63'];
+        const index = (name || '').length % colors.length;
+        return colors[index];
+    };
+
     const renderDoctorCard = ({ item }) => (
-        <TouchableOpacity onPress={() => handleDoctorPress(item)}>
-            <Card style={styles.doctorCard}>
-                <Card.Content style={styles.cardContent}>
-                    <Avatar.Image
-                        size={60}
-                        source={
-                            item.photo_url
-                                ? { uri: item.photo_url }
-                                : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.name || 'User') + '&background=random' }
-                        }
-                        style={styles.avatar}
-                    />
-                    <View style={styles.doctorInfo}>
-                        <Text style={styles.doctorName}>{item.name}</Text>
-                        <Text style={styles.doctorSpecialty}>{item.specialty}</Text>
-                        <Chip mode="outlined" style={styles.chip}>
-                            Available
-                        </Chip>
-                    </View>
-                    <Text style={styles.arrowIcon}>›</Text>
-                </Card.Content>
-            </Card>
+        <TouchableOpacity
+            style={styles.doctorCard}
+            onPress={() => handleDoctorPress(item)}
+        >
+            <View style={[styles.avatar, { backgroundColor: getAvatarColor(item.name || item.full_name) }]}>
+                <Text style={styles.avatarText}>
+                    {getInitials(item.name || item.full_name)}
+                </Text>
+            </View>
+            <View style={styles.doctorInfo}>
+                <Text style={styles.doctorName}>{item.name || item.full_name}</Text>
+                <Text style={styles.doctorSpecialty}>{item.specialty || 'General Practice'}</Text>
+                <View style={styles.statusBadge}>
+                    <Text style={styles.statusText}>Available</Text>
+                </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#CCC" />
         </TouchableOpacity>
     );
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                {/* Search Bar */}
-                <Searchbar
-                    placeholder="Search by doctor name"
-                    onChangeText={setSearchQuery}
-                    value={searchQuery}
-                    onSubmitEditing={searchDoctors}
-                    style={styles.searchBar}
-                />
-
-                {/* Specialty Filters */}
-                <View style={styles.specialtyContainer}>
-                    <Text style={styles.specialtyLabel}>Filter by Specialty:</Text>
-                    <View style={styles.chipContainer}>
-                        <Chip
-                            selected={specialty === 'Cardiology'}
-                            onPress={() => filterBySpecialty('Cardiology')}
-                            style={styles.specialtyChip}
-                        >
-                            Cardiology
-                        </Chip>
-                        <Chip
-                            selected={specialty === 'Dermatology'}
-                            onPress={() => filterBySpecialty('Dermatology')}
-                            style={styles.specialtyChip}
-                        >
-                            Dermatology
-                        </Chip>
-                        <Chip
-                            selected={specialty === 'Pediatrics'}
-                            onPress={() => filterBySpecialty('Pediatrics')}
-                            style={styles.specialtyChip}
-                        >
-                            Pediatrics
-                        </Chip>
-                        <Chip
-                            selected={specialty === 'Orthopedics'}
-                            onPress={() => filterBySpecialty('Orthopedics')}
-                            style={styles.specialtyChip}
-                        >
-                            Orthopedics
-                        </Chip>
-                        <Chip
-                            selected={specialty === ''}
-                            onPress={() => {
-                                setSpecialty('');
-                                setDoctors([]);
-                                setSearched(false);
-                            }}
-                            style={styles.specialtyChip}
-                        >
-                            Clear
-                        </Chip>
-                    </View>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={24} color="#333" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Find a Doctor</Text>
+                    <View style={{ width: 24 }} />
                 </View>
 
-                {/* Loading Indicator */}
-                {loading && (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color="#6200ee" />
-                        <Text style={styles.loadingText}>Searching doctors...</Text>
-                    </View>
-                )}
+                {/* Search Bar */}
+                <View style={styles.searchBar}>
+                    <Ionicons name="search-outline" size={20} color="#999" />
+                    <TextInput
+                        placeholder="Search doctors by name or specialty..."
+                        placeholderTextColor="#999"
+                        style={styles.searchInput}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                            <Ionicons name="close-circle" size={20} color="#999" />
+                        </TouchableOpacity>
+                    )}
+                </View>
 
-                {/* Results List */}
-                {!loading && searched && (
+                {/* Loading */}
+                {loading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={COLORS.primary} />
+                        <Text style={styles.loadingText}>Loading doctors...</Text>
+                    </View>
+                ) : filteredDoctors.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="people-outline" size={60} color="#DDD" />
+                        <Text style={styles.emptyText}>No doctors found</Text>
+                        <Text style={styles.emptySubtext}>
+                            {searchQuery ? 'Try a different search term' : 'No doctors available'}
+                        </Text>
+                    </View>
+                ) : (
                     <FlatList
-                        data={doctors}
+                        data={filteredDoctors}
                         renderItem={renderDoctorCard}
-                        keyExtractor={(item) => item.id}
+                        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
                         contentContainerStyle={styles.listContainer}
-                        ListEmptyComponent={
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No doctors found</Text>
-                                <Text style={styles.emptySubtext}>
-                                    Try adjusting your search criteria
-                                </Text>
-                            </View>
+                        showsVerticalScrollIndicator={false}
+                        ListHeaderComponent={
+                            <Text style={styles.resultCount}>
+                                {filteredDoctors.length} doctor{filteredDoctors.length !== 1 ? 's' : ''} found
+                            </Text>
                         }
                     />
                 )}
-
-                {/* Initial State */}
-                {!loading && !searched && (
-                    <View style={styles.initialContainer}>
-                        <Text style={styles.initialText}>
-                            Search for doctors by name or select a specialty
-                        </Text>
-                    </View>
-                )}
             </View>
+
+            <BottomNavBar navigation={navigation} activeTab="Search" />
         </SafeAreaView>
     );
 }
@@ -201,33 +170,39 @@ export default function DoctorSearchScreen({ navigation }) {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#F9FAFC',
     },
     container: {
         flex: 1,
-        padding: 16,
+        padding: 20,
     },
-    searchBar: {
-        margin: 16,
-        elevation: 2,
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
     },
-    specialtyContainer: {
-        paddingHorizontal: 16,
-        marginBottom: 16,
-    },
-    specialtyLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
         color: '#333',
     },
-    chipContainer: {
+    searchBar: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        height: 50,
+        borderWidth: 1,
+        borderColor: '#EEE',
+        marginBottom: 20,
     },
-    specialtyChip: {
-        marginRight: 8,
-        marginBottom: 8,
+    searchInput: {
+        flex: 1,
+        marginLeft: 10,
+        fontSize: 15,
+        color: '#333',
     },
     loadingContainer: {
         flex: 1,
@@ -235,67 +210,83 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     loadingText: {
-        marginTop: 16,
-        fontSize: 16,
+        marginTop: 15,
+        fontSize: 14,
         color: '#666',
     },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    emptyText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#666',
+        marginTop: 15,
+    },
+    emptySubtext: {
+        fontSize: 13,
+        color: '#999',
+        marginTop: 5,
+        textAlign: 'center',
+    },
     listContainer: {
-        padding: 16,
+        paddingBottom: 100,
+    },
+    resultCount: {
+        fontSize: 13,
+        color: '#666',
+        marginBottom: 15,
     },
     doctorCard: {
-        marginBottom: 12,
-        elevation: 2,
-    },
-    cardContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 15,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
     },
     avatar: {
-        marginRight: 16,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    avatarText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
     doctorInfo: {
         flex: 1,
     },
     doctorName: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: 'bold',
-        marginBottom: 4,
+        color: '#333',
+        marginBottom: 3,
     },
     doctorSpecialty: {
-        fontSize: 14,
+        fontSize: 13,
         color: '#666',
-        marginBottom: 8,
+        marginBottom: 6,
     },
-    chip: {
+    statusBadge: {
         alignSelf: 'flex-start',
+        backgroundColor: '#E8F5E9',
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderRadius: 10,
     },
-    arrowIcon: {
-        fontSize: 32,
-        color: '#999',
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        marginTop: 48,
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#666',
-        marginBottom: 8,
-    },
-    emptySubtext: {
-        fontSize: 14,
-        color: '#999',
-    },
-    initialContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 32,
-    },
-    initialText: {
-        fontSize: 16,
-        color: '#999',
-        textAlign: 'center',
+    statusText: {
+        fontSize: 11,
+        color: '#4CAF50',
+        fontWeight: '500',
     },
 });

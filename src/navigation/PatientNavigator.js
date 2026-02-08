@@ -2,13 +2,13 @@ import React from 'react';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 
 // Screens
-import MicrophoneTestScreen from '../screens/patient/MicrophoneTestScreen';
 import PatientDashboard from '../screens/patient/PatientDashboard';
 import MedicalRecordsScreen from '../screens/patient/MedicalRecordsScreen';
 import ScheduleScreen from '../screens/patient/ScheduleScreen';
 import MessagesScreen from '../screens/patient/MessagesScreen';
 import SearchScreen from '../screens/patient/SearchScreen';
 import PatientSettingsScreen from '../screens/patient/PatientSettingsScreen';
+import PatientNotificationsScreen from '../screens/patient/PatientNotificationsScreen';
 import DoctorSearchScreen from '../screens/patient/DoctorSearchScreen';
 import AppointmentBookingScreen from '../screens/patient/AppointmentBookingScreen';
 
@@ -20,17 +20,15 @@ const Stack = createStackNavigator();
 export default function PatientNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="MicrophoneTest" // Maps to MicrophoneTest as per your original logic
+      initialRouteName="PatientDashboard"
       screenOptions={{
         headerShown: false,
         cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
-      {/* Entry Point */}
-      <Stack.Screen name="MicrophoneTest" component={MicrophoneTestScreen} />
-
       {/* Main Screens */}
       <Stack.Screen name="PatientDashboard" component={PatientDashboard} />
+      <Stack.Screen name="PatientNotificationsScreen" component={PatientNotificationsScreen} />
       <Stack.Screen name="MedicalRecordsScreen" component={MedicalRecordsScreen} />
       <Stack.Screen name="ScheduleScreen" component={ScheduleScreen} />
       <Stack.Screen name="MessagesScreen" component={MessagesScreen} />

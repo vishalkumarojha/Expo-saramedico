@@ -1,144 +1,56 @@
-# Test User Credentials for SaraMedico
+# Test Account Credentials
 
-## Creating Test Accounts
+## Test Doctors
 
-### Option 1: Using the App (Recommended)
+| Name | Email | Password | Specialty | License |
+|------|-------|----------|-----------|---------|
+| Dr. Sarah Johnson | sarah.johnson@test.com | Test123! | Cardiology | MD12345 |
+| Dr. Michael Chen | michael.chen@test.com | Test123! | Pediatrics | MD12346 |
+| Dr. Emily Davis | emily.davis@test.com | Test123! | Dermatology | MD12347 |
+| Dr. James Wilson | james.wilson@test.com | Test123! | Orthopedics | MD12348 |
+| Dr. Maria Garcia | maria.garcia@test.com | Test123! | Neurology | MD12349 |
+| Dr. Robert Taylor | robert.taylor@test.com | Test123! | Psychiatry | MD12350 |
 
-#### Create a Doctor Account
-1. Open the app
-2. Go to **Sign Up**
-3. Select role: **Doctor**
-4. Fill in:
-   - **Full Name**: Dr. John Smith
-   - **Email**: doctor@test.com
-   - **Phone**: +1 234-567-8900
-   - **License Number**: MD12345678
-   - **Specialty**: Cardiology
-   - **Password**: test1234
-   - **Confirm Password**: test1234
-5. Accept terms → **Sign Up**
+## Test Patients
 
-#### Create a Patient Account
-1. **Important**: Log out first if logged in as doctor
-2. Go to **Sign Up**
-3. Select role: **Patient**
-4. Fill in:
-   - **Full Name**: Jane Doe
-   - **Email**: patient@test.com
-   - **Phone**: +1 234-567-8901
-   - **Password**: test1234
-   - **Confirm Password**: test1234
-5. Accept terms → **Sign Up**
+| Name | Email | Password | MRN | DOB | Gender |
+|------|-------|----------|-----|-----|--------|
+| John Smith | john.smith@test.com | Test123! | MRN1000 | 1985-03-15 | Male |
+| Emma Brown | emma.brown@test.com | Test123! | MRN1001 | 1990-07-22 | Female |
+| Michael Jones | michael.jones@test.com | Test123! | MRN1002 | 1978-11-08 | Male |
+| Olivia Williams | olivia.williams@test.com | Test123! | MRN1003 | 1995-05-30 | Female |
+| Liam Miller | liam.miller@test.com | Test123! | MRN1004 | 1982-09-14 | Male |
+| Sophia Davis | sophia.davis@test.com | Test123! | MRN1005 | 1988-12-25 | Female |
 
----
+## Test Admin
 
-### Option 2: Using Backend API Directly
+| Name | Email | Password | Role |
+|------|-------|----------|------|
+| Admin User | admin@test.com | test1234 | admin |
 
-If signup in the app fails, create users via backend:
+## Test Hospital
+
+| Name | Email | Password | Role |
+|------|-------|----------|------|
+| City Hospital | hospital@test.com | test1234 | hospital |
+
+## How to Create Test Data
+
+Run the following command from the backend directory:
 
 ```bash
-cd ~/Desktop/Projects/folder/sara_medico/backend
-
-# Create a doctor
-curl -X POST http://localhost:8001/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "doctor@test.com",
-    "password": "test1234",
-    "confirm_password": "test1234",
-    "first_name": "John",
-    "last_name": "Smith",
-    "role": "doctor",
-    "phone_number": "+1234567 8900",
-    "specialty": "Cardiology",
-    "license_number": "MD12345678"
-  }'
-
-# Create a patient
-curl -X POST http://localhost:8001/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "patient@test.com",
-    "password": "test1234",
-    "confirm_password": "test1234",
-    "first_name": "Jane",
-    "last_name": "Doe",
-    "role": "patient",
-    "phone_number": "+12345678901"
-  }'
+python3 create_test_data.py
 ```
 
----
+This will create:
+- 6 test doctor accounts with specialties
+- 6 test patient accounts with patient records
+- All accounts use password: `Test123!`
+- All accounts are in organization: "Test Medical Center"
 
-## Testing the Complete Flow
+## Notes
 
-### 1. Login as Patient
-- **Email**: patient@test.com
-- **Password**: test1234
-
-### 2. Book an Appointment
-1. After login, go to **Schedule** tab
-2. Tap **+** or **Book Appointment**
-3. Search for "John" or "Cardiology"
-4. Select Dr. John Smith
-5. Fill in reason: "Heart checkup"
-6. Submit request
-
-### 3. Login as Doctor
-**Logout first**, then:
-- **Email**: doctor@test.com
-- **Password**: test1234
-
-### 4. Approve Appointment
-1. Go to **Schedule** screen
-2. You should see the pending appointment
-3. Tap **Approve**
-4. Backend will generate Zoom link
-
-### 5. Test Video Call
-**As Doctor**:
-- Tap **Start Video Call** button
-- Opens Zoom with host controls
-
-**As Patient** (logout and login as patient):
-- Refresh schedule
-- Tap **Join Call** button
-- Opens Zoom meeting
-
----
-
-## Troubleshooting
-
-### 401 Unauthorized Error
-**Cause**: Invalid credentials or email not verified
-**Fix**:
-- Double-check email and password
-- If using backend database directly, set `email_verified=True`
-
-### 422 Validation Error
-**Cause**: Missing required fields or wrong format
-**Fix**:
-- Ensure `confirm_password` matches `password`
-- For doctors, include `license_number`
-- Phone format: `+1234567890` (no spaces in API calls)
-
-### User Already Exists
-**Fix**: Use different email or delete existing user from database
-
-### No Appointments Showing
-**Fix**:
-- Check if users are in the same organization
-- Verify backend logs for errors
-- Pull to refresh the schedule screen
-
----
-
-## Quick Test Credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| Patient | patient@test.com | test1234 |
-| Doctor | doctor@test.com | test1234 |
-| Admin | admin@test.com | test1234 |
-
-**Remember**: These must be created first using one of the methods above!
+- All accounts have email verification enabled
+- MFA is disabled by default
+- Doctors have valid license numbers
+- Patients have realistic DOB and demographics

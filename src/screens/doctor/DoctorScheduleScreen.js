@@ -33,7 +33,23 @@ export default function DoctorScheduleScreen({ navigation }) {
 
         try {
             const response = await doctorAPI.getAppointments();
-            setAppointments(response.data || []);
+            const allAppointments = response.data || [];
+
+            // Filter out past accepted appointments
+            const now = new Date();
+            const filteredAppointments = allAppointments.filter(appointment => {
+                const appointmentDate = new Date(appointment.requested_date);
+
+                // Keep all pending and declined appointments (for history)
+                if (appointment.status !== 'accepted') {
+                    return true;
+                }
+
+                // For accepted appointments, only show current or future ones
+                return appointmentDate >= now;
+            });
+
+            setAppointments(filteredAppointments);
         } catch (error) {
             console.error('Failed to load appointments:', error);
             const errorInfo = ErrorHandler.handleError(error);

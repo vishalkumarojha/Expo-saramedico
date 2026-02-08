@@ -17,6 +17,8 @@ const SPECIALTIES = [
 
 export default function DoctorSpecialtyScreen({ navigation }) {
   const [selectedId, setSelectedId] = useState('card'); // Default 'Cardiology' selected for demo
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customSpecialty, setCustomSpecialty] = useState('');
 
   const handleContinue = () => {
     navigation.navigate('DoctorMicrophoneTestScreen');
@@ -66,7 +68,10 @@ export default function DoctorSpecialtyScreen({ navigation }) {
               <TouchableOpacity
                 key={item.id}
                 style={[styles.card, isSelected && styles.cardActive]}
-                onPress={() => setSelectedId(item.id)}
+                onPress={() => {
+                  setSelectedId(item.id);
+                  setShowCustomInput(false);
+                }}
                 activeOpacity={0.9}
               >
                 <View style={styles.cardLeft}>
@@ -83,7 +88,43 @@ export default function DoctorSpecialtyScreen({ navigation }) {
               </TouchableOpacity>
             );
           })}
-          <View style={{ height: 100 }} />
+
+          {/* Custom Specialty Option */}
+          <TouchableOpacity
+            style={[styles.card, showCustomInput && styles.cardActive, styles.customCard]}
+            onPress={() => {
+              setShowCustomInput(true);
+              setSelectedId(null);
+            }}
+            activeOpacity={0.9}
+          >
+            <View style={styles.cardLeft}>
+              <View style={styles.iconBox}>
+                <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+              </View>
+              <Text style={[styles.cardTitle, showCustomInput && styles.cardTitleActive]}>I don't see my specialty</Text>
+            </View>
+            <View style={[styles.radioOuter, showCustomInput && styles.radioOuterActive]}>
+              {showCustomInput && <View style={styles.radioInner} />}
+            </View>
+          </TouchableOpacity>
+
+          {/* Custom Input Field */}
+          {showCustomInput && (
+            <View style={styles.customInputContainer}>
+              <Text style={styles.customInputLabel}>Enter your specialty:</Text>
+              <TextInput
+                style={styles.customInput}
+                placeholder="e.g., Oncology, Endocrinology"
+                placeholderTextColor="#999"
+                value={customSpecialty}
+                onChangeText={setCustomSpecialty}
+                autoFocus={true}
+              />
+            </View>
+          )}
+
+          <View style={{ height: 150 }} />
         </ScrollView>
 
         {/* Footer */}
@@ -130,6 +171,26 @@ const styles = StyleSheet.create({
   radioOuter: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#DDD', justifyContent: 'center', alignItems: 'center' },
   radioOuterActive: { borderColor: COLORS.primary },
   radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+
+  customCard: { borderWidth: 2, borderColor: COLORS.primary, backgroundColor: '#F0F8FF' },
+  customInputContainer: {
+    marginTop: 10,
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0'
+  },
+  customInputLabel: { fontSize: 14, color: '#666', marginBottom: 10, fontWeight: '500' },
+  customInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: 'white'
+  },
 
   footer: { position: 'absolute', bottom: 30, left: 25, right: 25 }
 });

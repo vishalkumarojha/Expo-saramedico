@@ -1,70 +1,187 @@
-import React from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  SafeAreaView 
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomButton } from '../../components/CustomComponents';
+import { authAPI } from '../../services/api';
 
-export default function OTPScreen({ navigation }) {
+export default function OTPScreen({ navigation, route }) {
+  const email = route?.params?.email || '';
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    // Start countdown timer
+    const timer = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          setCanResend(true);
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleOtpChange = (value, index) => {
+    if (value.length > 1) {
+      value = value.charAt(value.length - 1);
+    }
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerify = () => {
+    const otpCode = otp.join('');
+    if (otpCode.length !== 6) {
+      Alert.alert('Error', 'Please enter the complete 6-digit code');
+      return;
+    }
+
+    // Navigate to reset password with the token (OTP code)
+    navigation.navigate('ResetPassword', {
+      email,
+      token: otpCode
+    });
+  };
+
+  const handleResend = async () => {
+    if (!canResend) return;
+
+    setLoading(true);
+    try {
+      await authAPI.forgotPassword(email);
+      Alert.alert('Success', 'A new code has been sent to your email');
+      setResendTimer(60);
+      setCanResend(false);
+      setOtp(['', '', '', '', '', '']);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to resend code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        
+
         {/* Header: Back Button */}
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={26} color="#333" />
         </TouchableOpacity>
-        
+
         <View style={styles.centerContent}>
-          
+
           {/* Lock Icon */}
           <View style={styles.iconCircle}>
-            <Ionicons name="lock-closed" size={30} color="#333" />
-            <View style={styles.badgeContainer}>
-               <Ionicons name="person" size={10} color="white" />
-            </View>
+            <Ionicons name="mail" size={35} color="#333" />
           </View>
 
           {/* Text */}
-          <Text style={styles.heading}>Check your Inbox</Text>
+          <Text style={styles.heading}>Check your Email</Text>
           <Text style={styles.subText}>
-            We sent a code to <Text style={styles.boldText}>+1(222) xxx-xxx89</Text>.
+            We sent a 6-digit code to{'\n'}
+            <Text style={styles.boldText}>{email || 'your email'}</Text>
           </Text>
           <Text style={styles.subText}>
-            Enter the code below to reset the password.
+            Enter the code below to reset your password.
           </Text>
 
           {/* OTP Input Boxes */}
           <View style={styles.otpContainer}>
-             <View style={[styles.otpBox, styles.otpBoxActive]}>
-               <Text style={styles.cursor}>|</Text> 
-             </View>
-             {[2,3,4,5,6].map((_, i) => (
-               <View key={i} style={styles.otpBox} />
-             ))}
+            {otp.map((digit, index) => (
+              <TextInput
+                key={index}
+                ref={(ref) => inputRefs.current[index] = ref}
+                style={[
+                  styles.otpBox,
+                  digit ? styles.otpBoxFilled : null
+                ]}
+                value={digit}
+                onChangeText={(value) => handleOtpChange(value, index)}
+                onKeyPress={(e) => handleKeyPress(e, index)}
+                keyboardType="number-pad"
+                maxLength={1}
+                selectTextOnFocus
+              />
+            ))}
           </View>
 
-          {/* --- FIX: Wrapped Button to force 100% Width --- */}
+          {/* Verify Button */}
           <View style={styles.verifyBtnWrapper}>
-            <CustomButton 
-              title="Verify" 
-              onPress={() => navigation.navigate('ResetPassword')} 
+            <CustomButton
+              title={loading ? "Verifying..." : "Verify"}
+              onPress={handleVerify}
+              disabled={loading}
             />
           </View>
-          
+
           {/* Resend Code */}
-          <TouchableOpacity style={styles.resendContainer}>
-            <Ionicons name="refresh" size={16} color="#333" style={{marginRight: 6}} />
-            <Text style={styles.resendText}>Resend code in 00:50</Text>
+          <TouchableOpacity
+            style={styles.resendContainer}
+            onPress={handleResend}
+            disabled={!canResend || loading}
+          >
+            <Ionicons
+              name="refresh"
+              size={16}
+              color={canResend ? COLORS.primary : '#999'}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={[
+              styles.resendText,
+              canResend && { color: COLORS.primary }
+            ]}>
+              {canResend ? 'Resend Code' : `Resend code in ${formatTime(resendTimer)}`}
+            </Text>
           </TouchableOpacity>
+
+          {loading && (
+            <ActivityIndicator
+              size="small"
+              color={COLORS.primary}
+              style={{ marginTop: 20 }}
+            />
+          )}
 
         </View>
       </View>
@@ -73,51 +190,59 @@ export default function OTPScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EAF4FF' }, 
+  container: { flex: 1, backgroundColor: '#EAF4FF' },
   content: { padding: 25, flex: 1 },
-  
+
   backButton: { marginTop: 10, alignSelf: 'flex-start' },
-  
+
   centerContent: { alignItems: 'center', marginTop: 50, width: '100%' },
-  
-  iconCircle: { 
-    width: 80, height: 80, borderRadius: 40, 
-    backgroundColor: '#D9D9D9', 
-    justifyContent: 'center', alignItems: 'center', 
+
+  iconCircle: {
+    width: 90, height: 90, borderRadius: 45,
+    backgroundColor: '#D9E9F9',
+    justifyContent: 'center', alignItems: 'center',
     marginBottom: 25,
-    position: 'relative'
-  },
-  badgeContainer: {
-    position: 'absolute', bottom: 22, right: 22,
-    backgroundColor: '#666', borderRadius: 10, width: 16, height: 16,
-    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#D9D9D9'
   },
 
-  heading: { fontSize: 22, fontWeight: 'bold', marginBottom: 15, color: '#1A1A1A' },
-  subText: { color: '#555', textAlign: 'center', fontSize: 14, marginBottom: 4, lineHeight: 20 },
+  heading: { fontSize: 24, fontWeight: 'bold', marginBottom: 15, color: '#1A1A1A' },
+  subText: { color: '#555', textAlign: 'center', fontSize: 14, marginBottom: 4, lineHeight: 22 },
   boldText: { fontWeight: 'bold', color: '#1A1A1A' },
-  
-  otpContainer: { 
-    flexDirection: 'row', justifyContent: 'space-between', 
-    width: '100%', marginTop: 30, marginBottom: 30 
-  },
-  otpBox: { 
-    width: 45, height: 55, 
-    borderWidth: 1, borderColor: '#E0E0E0', 
-    borderRadius: 10, backgroundColor: 'white',
-    justifyContent: 'center', alignItems: 'center' 
-  },
-  otpBoxActive: { 
-    borderColor: COLORS.primary, borderWidth: 2,
-    shadowColor: COLORS.primary, shadowOpacity: 0.2, shadowRadius: 4
-  },
-  cursor: { fontSize: 24, color: COLORS.primary, fontWeight: '300' },
 
-  // --- FIX: Ensure button wrapper is full width ---
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 30,
+    marginBottom: 30
+  },
+  otpBox: {
+    width: 48,
+    height: 55,
+    borderWidth: 1,
+    borderColor: '#D0D0D0',
+    borderRadius: 12,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+  },
+  otpBoxFilled: {
+    borderColor: COLORS.primary,
+    borderWidth: 2,
+  },
+
   verifyBtnWrapper: {
     width: '100%',
   },
 
-  resendContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 25 },
-  resendText: { color: '#333', fontSize: 14, fontWeight: '500' },
+  resendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 25,
+    padding: 10,
+  },
+  resendText: { color: '#666', fontSize: 14, fontWeight: '500' },
 });

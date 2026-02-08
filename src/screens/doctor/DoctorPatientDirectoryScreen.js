@@ -1,22 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity
+  View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import DoctorBottomNavBar from '../../components/DoctorBottomNavBar';
-
-const PATIENTS = [
-  { name: 'Rohit Sharma', dob: '01/12/90', mrn: '882-921', status: 'Analysis Ready', statusColor: COLORS.primary },
-  { name: 'Sara Shetty', dob: '08/08/90', mrn: '882-921', status: 'Check-up pending', statusColor: '#999' },
-  { name: 'John Peak', dob: '12/10/90', mrn: '882-521', status: 'Post-op', statusColor: '#666' },
-  { name: 'Hamilton', dob: '12/10/80', mrn: '862-521', status: 'Operation', statusColor: '#666' },
-  { name: 'Vama Rev', dob: '12/10/90', mrn: '862-521', status: 'Cardiology', statusColor: '#666' },
-  { name: 'Vama Rev', dob: '12/10/90', mrn: '862-521', status: 'Review Needed', statusColor: '#F9A825' },
-];
+import { doctorAPI } from '../../services/api';
 
 export default function DoctorPatientDirectoryScreen({ navigation }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [patients, setPatients] = useState([]);
+  const [filteredPatients, setFilteredPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadPatients();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const filtered = patients.filter(p =>
+        p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.mrn && p.mrn.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredPatients(filtered);
+    } else {
+      // Show top 10 recent patients when no search
+      setFilteredPatients(patients.slice(0, 10));
+    }
+  }, [searchQuery, patients]);
+
+  const loadPatients = async () => {
+    setLoading(true);
+    try {
+      const response = await doctorAPI.getPatients();
+      const patientsData = response.data?.patients || response.data || [];
+
+      // Sort by last visit (most recent first)
+      const sorted = patientsData.sort((a, b) => {
+        const dateA = new Date(a.lastVisit || a.last_visit || 0);
+        const dateB = new Date(b.lastVisit || b.last_visit || 0);
+        return dateB - dateA;
+      });
+
+      setPatients(sorted);
+    } catch (error) {
+      console.error('Error loading patients:', error);
+      // Fallback to empty array
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePatientPress = (patient) => {
+    navigation.navigate('DoctorPatientDetailScreen', {
+      patientId: patient.id,
+      patient: patient
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -27,8 +71,14 @@ export default function DoctorPatientDirectoryScreen({ navigation }) {
             <Ionicons name="menu-outline" size={28} color="#333" />
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: 15 }}>
-            <Ionicons name="notifications" size={24} color="#333" />
-            <View style={styles.avatar} />
+            <TouchableOpacity onPress={() => navigation.navigate('DoctorAlertsScreen')}>
+              <Ionicons name="notifications" size={24} color="#333" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('DoctorSettingsScreen')}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={18} color="#666" />
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -39,10 +89,17 @@ export default function DoctorPatientDirectoryScreen({ navigation }) {
           <View style={styles.searchBox}>
             <Ionicons name="search" size={20} color="#999" />
             <TextInput
-              placeholder="Search patients, reports, notes..."
+              placeholder="Search patients by name or MRN..."
               placeholderTextColor="#999"
               style={styles.input}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Add Patient Button */}
@@ -54,6 +111,11 @@ export default function DoctorPatientDirectoryScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Subtitle */}
+        <Text style={styles.subtitle}>
+          {searchQuery ? `Search Results (${filteredPatients.length})` : 'Recent Patients (10)'}
+        </Text>
+
         {/* List Header */}
         <View style={styles.listHeader}>
           <Text style={[styles.headerText, { flex: 2 }]}>NAME</Text>
@@ -62,32 +124,50 @@ export default function DoctorPatientDirectoryScreen({ navigation }) {
         </View>
 
         {/* Patient List */}
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-          {PATIENTS.map((p, i) => (
-            <TouchableOpacity
-              key={i}
-              style={styles.row}
-              // --- NAVIGATION ACTION ADDED HERE ---
-              onPress={() => navigation.navigate('DoctorPatientDetailScreen', { patient: p })}
-            >
-              <View style={{ flex: 2 }}>
-                <Text style={styles.nameText}>{p.name}</Text>
-                <Text style={[styles.statusText, { color: p.statusColor }]}>{p.status}</Text>
-              </View>
-              <Text style={[styles.dateText, { flex: 1 }]}>{p.dob}</Text>
-              <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <Text style={styles.mrnText}>{p.mrn}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#CCC" style={{ marginLeft: 10 }} />
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Loading patients...</Text>
+          </View>
+        ) : filteredPatients.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={60} color="#DDD" />
+            <Text style={styles.emptyText}>
+              {searchQuery ? 'No patients found' : 'No patients yet'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {searchQuery ? 'Try a different search term' : 'Add your first patient to get started'}
+            </Text>
+          </View>
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            {filteredPatients.map((p, i) => (
+              <TouchableOpacity
+                key={p.id || i}
+                style={styles.row}
+                onPress={() => handlePatientPress(p)}
+              >
+                <View style={{ flex: 2 }}>
+                  <Text style={styles.nameText}>{p.name}</Text>
+                  <Text style={[styles.statusText, { color: p.statusColor || COLORS.primary }]}>
+                    {p.statusTag || p.status_tag || p.status || 'Active'}
+                  </Text>
+                </View>
+                <Text style={[styles.dateText, { flex: 1 }]}>{p.dob || 'N/A'}</Text>
+                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <Text style={styles.mrnText}>{p.mrn || 'N/A'}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#CCC" style={{ marginLeft: 10 }} />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Bottom Navigation */}
         <DoctorBottomNavBar
           navigation={navigation}
           activeTab="Patients"
-          onFabPress={() => { /* Quick Actions Logic */ }}
+          onFabPress={() => navigation.navigate('DoctorAddPatientScreen')}
         />
       </View>
     </SafeAreaView>
@@ -99,8 +179,9 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 20, paddingBottom: 0 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  avatar: { width: 35, height: 35, borderRadius: 17.5, backgroundColor: '#DDD' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: '#1A1A1A' },
+  avatar: { width: 35, height: 35, borderRadius: 17.5, backgroundColor: '#E0E0E0', justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 15, color: '#1A1A1A' },
+  subtitle: { fontSize: 13, color: '#666', marginBottom: 10 },
 
   searchRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 10, paddingHorizontal: 15, height: 50, borderWidth: 1, borderColor: '#EEE' },
@@ -115,5 +196,12 @@ const styles = StyleSheet.create({
   nameText: { fontSize: 14, fontWeight: 'bold', color: '#333' },
   statusText: { fontSize: 11, marginTop: 4, fontWeight: '500' },
   dateText: { fontSize: 13, color: '#666' },
-  mrnText: { fontSize: 13, color: '#666' }
+  mrnText: { fontSize: 13, color: '#666' },
+
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+  loadingText: { marginTop: 15, fontSize: 14, color: '#666' },
+
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+  emptyText: { marginTop: 15, fontSize: 16, fontWeight: '600', color: '#666' },
+  emptySubtext: { marginTop: 8, fontSize: 13, color: '#999' }
 });

@@ -18,11 +18,9 @@ import { CustomInput, CustomButton } from '../../components/CustomComponents';
 
 import { authAPI, storeTokens } from '../../services/api';
 import { Alert, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen({ navigation }) {
-  // Default role is Doctor as per screenshot
-  const [role, setRole] = useState('Doctor');
-  const [showRolePicker, setShowRolePicker] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'connected', 'error'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -113,35 +111,6 @@ export default function LoginScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* --- DROPDOWN SECTION (Fixed Z-Index/Overlap) --- */}
-        <View style={styles.dropdownWrapper}>
-          <Text style={styles.label}>Login as</Text>
-
-          <TouchableOpacity
-            style={styles.dropdownTrigger}
-            onPress={() => setShowRolePicker(!showRolePicker)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.dropdownText}>{role}</Text>
-            <Ionicons name={showRolePicker ? "chevron-up" : "chevron-down"} size={20} color="#666" />
-          </TouchableOpacity>
-
-          {/* Dropdown List */}
-          {showRolePicker && (
-            <View style={styles.dropdownList}>
-              {['Patient', 'Doctor', 'Admin', 'Hospital'].map((r) => (
-                <TouchableOpacity
-                  key={r}
-                  style={styles.dropdownItem}
-                  onPress={() => { setRole(r); setShowRolePicker(false); }}
-                >
-                  <Text style={styles.dropdownItemText}>{r}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
         {/* Inputs */}
         <Text style={styles.label}>Work Email</Text>
         <CustomInput
@@ -161,7 +130,7 @@ export default function LoginScreen({ navigation }) {
 
         {/* Forgot Password Link */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('OTP')}
+          onPress={() => navigation.navigate('ForgotPassword')}
           style={{ alignSelf: 'flex-end', marginBottom: 20, marginTop: 5, padding: 5 }}
         >
           <Text style={styles.forgotPassText}>Forgot Password?</Text>
@@ -213,37 +182,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
   statusText: { fontSize: 12, color: '#666', fontWeight: '500' },
 
-  // --- DROPDOWN STYLES ---
-  dropdownWrapper: {
-    marginBottom: 5,
-    zIndex: 2000, // High zIndex for iOS
-    elevation: 2000, // High elevation for Android
-    position: 'relative', // Context for absolute children
-  },
-  dropdownTrigger: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: 'white', borderWidth: 1, borderColor: '#E8E8E8',
-    borderRadius: 12, paddingHorizontal: 15, height: 55,
-  },
-  dropdownText: { fontSize: 16, color: '#333' },
 
-  dropdownList: {
-    position: 'absolute',
-    top: 60, // Push it down below the trigger
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#eee',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  dropdownItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  dropdownItemText: { fontSize: 16, color: '#333' },
 
   // Footer Links & Socials
   forgotPassText: { color: '#444', fontSize: 14 },

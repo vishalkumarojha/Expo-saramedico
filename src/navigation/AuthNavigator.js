@@ -3,6 +3,7 @@ import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignUpScreen from '../screens/auth/SignUpScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import OTPScreen from '../screens/auth/OTPScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 
@@ -10,15 +11,16 @@ const Stack = createStackNavigator();
 
 export default function AuthNavigator() {
   return (
-    <Stack.Navigator 
+    <Stack.Navigator
       initialRouteName="Login"
       screenOptions={{
         headerShown: false,
-        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS, 
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="OTP" component={OTPScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
     </Stack.Navigator>
