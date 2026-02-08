@@ -10,7 +10,6 @@ export default {
         userInterfaceStyle: "light",
         android: {
             package: "com.saramedico.app",
-            minSdkVersion: 28,
             adaptiveIcon: {
                 foregroundImage: "./assets/icon.png",
                 backgroundColor: "#ffffff"

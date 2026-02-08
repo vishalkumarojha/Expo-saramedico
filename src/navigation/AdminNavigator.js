@@ -11,6 +11,8 @@ import AdminEditUserScreen from '../screens/admin/AdminEditUserScreen';
 import AdminSearchScreen from '../screens/admin/AdminSearchScreen';
 import AdminDoctorsScreen from '../screens/admin/AdminDoctorsScreen';
 import AdminOrganizationsScreen from '../screens/admin/AdminOrganizationsScreen';
+import AdminAnalyticsScreen from '../screens/admin/AdminAnalyticsScreen';
+import FAQScreen from '../screens/common/FAQScreen';
 
 const Stack = createStackNavigator();
 
@@ -39,6 +41,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminInviteMemberScreen" component={AdminInviteMemberScreen} />
       <Stack.Screen name="AdminEditUserScreen" component={AdminEditUserScreen} />
       <Stack.Screen name="AdminSearchScreen" component={AdminSearchScreen} />
+      <Stack.Screen name="AdminAnalyticsScreen" component={AdminAnalyticsScreen} />
+      <Stack.Screen name="FAQScreen" component={FAQScreen} />
     </Stack.Navigator>
   );
 }

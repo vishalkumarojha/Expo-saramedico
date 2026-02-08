@@ -32,6 +32,9 @@ import DoctorAvailabilityScreen from '../screens/doctor/DoctorAvailabilityScreen
 import DoctorCredentialsScreen from '../screens/doctor/DoctorCredentialsScreen';
 import DoctorServicesScreen from '../screens/doctor/DoctorServicesScreen';
 import DoctorChangePasswordScreen from '../screens/doctor/DoctorChangePasswordScreen';
+import AuditLogScreen from '../screens/common/AuditLogScreen';
+import DeleteAccountScreen from '../screens/common/DeleteAccountScreen';
+import FAQScreen from '../screens/common/FAQScreen';
 
 const Stack = createStackNavigator();
 
@@ -108,6 +111,9 @@ export default function DoctorNavigator() {
       <Stack.Screen name="DoctorCredentialsScreen" component={DoctorCredentialsScreen} />
       <Stack.Screen name="DoctorServicesScreen" component={DoctorServicesScreen} />
       <Stack.Screen name="DoctorChangePasswordScreen" component={DoctorChangePasswordScreen} />
+      <Stack.Screen name="AuditLogScreen" component={AuditLogScreen} />
+      <Stack.Screen name="DeleteAccountScreen" component={DeleteAccountScreen} />
+      <Stack.Screen name="FAQScreen" component={FAQScreen} />
     </Stack.Navigator>
   );
 }

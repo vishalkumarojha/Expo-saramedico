@@ -14,6 +14,9 @@ import AppointmentBookingScreen from '../screens/patient/AppointmentBookingScree
 
 // Shared
 import VideoCallScreen from '../screens/VideoCallScreen';
+import AuditLogScreen from '../screens/common/AuditLogScreen';
+import DeleteAccountScreen from '../screens/common/DeleteAccountScreen';
+import FAQScreen from '../screens/common/FAQScreen';
 
 const Stack = createStackNavigator();
 
@@ -39,6 +42,9 @@ export default function PatientNavigator() {
 
       {/* Shared */}
       <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} />
+      <Stack.Screen name="AuditLogScreen" component={AuditLogScreen} />
+      <Stack.Screen name="DeleteAccountScreen" component={DeleteAccountScreen} />
+      <Stack.Screen name="FAQScreen" component={FAQScreen} />
     </Stack.Navigator>
   );
 }

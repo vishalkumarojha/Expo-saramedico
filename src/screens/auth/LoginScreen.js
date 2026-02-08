@@ -85,6 +85,49 @@ export default function LoginScreen({ navigation }) {
       setLoading(false);
     }
   };
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      // TODO: Implement Google OAuth flow
+      // For now, show info message
+      Alert.alert(
+        'Google Login',
+        'Google OAuth integration requires:\n\n1. Google OAuth credentials in backend\n2. expo-auth-session or @react-native-google-signin/google-signin\n3. Backend endpoint: POST /api/v1/auth/google\n\nPlease configure these to enable Google login.',
+        [
+          {
+            text: 'OK',
+            onPress: () => console.log('Google login info acknowledged'),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Google login error:', error);
+      Alert.alert('Error', 'Google login is not configured yet');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      setLoading(true);
+      Alert.alert(
+        'Apple Login',
+        'Apple Sign-In integration requires:\n\n1. Apple Developer account\n2. expo-apple-authentication\n3. Backend endpoint: POST /api/v1/auth/apple\n\nPlease configure these to enable Apple login.',
+        [
+          {
+            text: 'OK',
+            onPress: () => console.log('Apple login info acknowledged'),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Apple login error:', error);
+      Alert.alert('Error', 'Apple login is not configured yet');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -145,12 +188,12 @@ export default function LoginScreen({ navigation }) {
 
         {/* Social Buttons */}
         <View style={{ marginTop: 20 }}>
-          <TouchableOpacity style={styles.socialButton} onPress={() => { }}>
+          <TouchableOpacity style={styles.socialButton} onPress={handleAppleLogin}>
             <Ionicons name="logo-apple" size={22} color="black" />
             <Text style={styles.socialBtnText}>Continue with Apple ID</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.socialButton} onPress={() => { }}>
+          <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
             <Ionicons name="logo-google" size={22} color="black" />
             <Text style={styles.socialBtnText}>Continue with Google</Text>
           </TouchableOpacity>

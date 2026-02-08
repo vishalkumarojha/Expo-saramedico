@@ -194,6 +194,38 @@ export default function DoctorSettingsScreen({ navigation }) {
                      </View>
                   </View>
 
+                  {/* PRIVACY & DATA Section */}
+                  <Text style={styles.sectionLabel}>PRIVACY & DATA</Text>
+                  <View style={styles.card}>
+                     <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => navigation.navigate('AuditLogScreen')}
+                     >
+                        <View style={styles.iconBox}><Ionicons name="list-outline" size={20} color="#555" /></View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={styles.itemTitle}>Audit Logs</Text>
+                           <Text style={styles.itemSub}>View your activity history</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#CCC" />
+                     </TouchableOpacity>
+
+                     <View style={styles.divider} />
+
+                     <TouchableOpacity
+                        style={styles.row}
+                        onPress={() => navigation.navigate('DeleteAccountScreen')}
+                     >
+                        <View style={[styles.iconBox, { backgroundColor: '#FFEBEE' }]}>
+                           <Ionicons name="trash-outline" size={20} color="#D32F2F" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                           <Text style={[styles.itemTitle, { color: '#D32F2F' }]}>Delete Account</Text>
+                           <Text style={styles.itemSub}>Permanently delete your account</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#CCC" />
+                     </TouchableOpacity>
+                  </View>
+
                   <Text style={styles.footerNote}>Contact administrator to change email or phone</Text>
 
                   <TouchableOpacity style={styles.signOutBtn} onPress={() => setShowSignOut(true)}>
