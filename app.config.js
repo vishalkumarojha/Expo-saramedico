@@ -29,7 +29,15 @@ export default {
             bundleIdentifier: "com.yourname.yourapp"
         },
         plugins: [
-            "expo-font"
+            "expo-font",
+            [
+                "expo-build-properties",
+                {
+                    "android": {
+                        "minSdkVersion": 28
+                    }
+                }
+            ]
         ]
     }
 };

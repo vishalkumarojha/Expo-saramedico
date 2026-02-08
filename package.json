@@ -16,6 +16,7 @@
     "@zoom/meetingsdk-react-native": "^6.6.0",
     "axios": "^1.13.2",
     "expo": "~54.0.33",
+    "expo-build-properties": "~1.0.10",
     "expo-document-picker": "~14.0.8",
     "expo-font": "~14.0.11",
     "expo-status-bar": "~3.0.9",
