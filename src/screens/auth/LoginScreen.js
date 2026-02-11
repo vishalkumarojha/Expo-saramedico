@@ -161,14 +161,22 @@ export default function LoginScreen({ navigation }) {
           icon="mail-outline"
           value={email}
           onChangeText={setEmail}
+          autoComplete="email"
+          textContentType="emailAddress"
+          keyboardType="email-address"
+          accessibilityLabel="Email input"
         />
 
         <Text style={styles.label}>Password</Text>
         <CustomInput
           placeholder="••••••••••••"
-          isPassword icon="key-outline"
+          isPassword
+          icon="key-outline"
           value={password}
           onChangeText={setPassword}
+          autoComplete="password"
+          textContentType="password"
+          accessibilityLabel="Password input"
         />
 
         {/* Forgot Password Link */}
@@ -213,8 +221,19 @@ const styles = StyleSheet.create({
 
   // Tabs
   tabContainer: { flexDirection: 'row', backgroundColor: '#F0F2F5', borderRadius: 30, padding: 4, marginBottom: 20 },
-  activeTab: { flex: 1, backgroundColor: COLORS.primary, borderRadius: 25, paddingVertical: 12, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  inactiveTab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
+  activeTab: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    borderRadius: 25,
+    paddingVertical: 14,
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5
+  },
+  inactiveTab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
   activeTabText: { fontWeight: 'bold', color: 'white', fontSize: 16 },
   inactiveTabText: { color: '#666', fontSize: 16 },
 

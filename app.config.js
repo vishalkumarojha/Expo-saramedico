@@ -37,7 +37,8 @@ export default {
                         "minSdkVersion": 28
                     }
                 }
-            ]
+            ],
+            "./plugins/withAndroidAllowBackup"
         ]
     }
 };
