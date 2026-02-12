@@ -8,11 +8,10 @@ import {
     StatusBar,
     TouchableOpacity,
     RefreshControl,
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_CONFIG } from '../../services/config';
+import { auditAPI } from '../../services/api';
 
 export default function AuditLogScreen({ navigation }) {
     const [logs, setLogs] = useState([]);
@@ -25,11 +24,14 @@ export default function AuditLogScreen({ navigation }) {
 
     const fetchAuditLogs = async () => {
         try {
-            const token = await AsyncStorage.getItem('userToken');
-            const response = await axios.get(`${API_CONFIG.BASE_URL}/audit-logs`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await auditAPI.getAuditLogs({
+                limit: 50,
+                offset: 0,
             });
-            setLogs(response.data.logs || []);
+
+            // Handle different response structures
+            const logsData = response.data?.logs || response.data || [];
+            setLogs(Array.isArray(logsData) ? logsData : []);
         } catch (error) {
             console.error('Error fetching audit logs:', error);
             // Use demo data if API not available
@@ -68,6 +70,17 @@ export default function AuditLogScreen({ navigation }) {
     const onRefresh = () => {
         setRefreshing(true);
         fetchAuditLogs();
+    };
+
+    const handleExport = async () => {
+        try {
+            // TODO: Implement export functionality
+            // const response = await auditAPI.exportAuditLogs({ format: 'csv' });
+            alert('Export functionality coming soon');
+        } catch (error) {
+            console.error('Error exporting logs:', error);
+            alert('Failed to export audit logs');
+        }
     };
 
     const getActionIcon = (action) => {
@@ -155,18 +168,40 @@ export default function AuditLogScreen({ navigation }) {
                     <Ionicons name="arrow-back" size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Audit Logs</Text>
-                <TouchableOpacity style={styles.refreshButton} onPress={fetchAuditLogs}>
-                    <Ionicons name="refresh" size={24} color="#0066CC" />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
+                        <Ionicons name="download-outline" size={20} color="#0066CC" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.refreshButton} onPress={fetchAuditLogs}>
+                        <Ionicons name="refresh" size={20} color="#0066CC" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Info Banner */}
             <View style={styles.infoBanner}>
-                <Ionicons name="information-circle" size={20} color="#3B82F6" />
+                <Ionicons name="shield-checkmark" size={20} color="#3B82F6" />
                 <Text style={styles.infoText}>
-                    Your activity history is logged for security and compliance purposes.
+                    HIPAA Compliant • Your activity is logged for security and compliance
                 </Text>
             </View>
+
+            {/* Stats Summary */}
+            {!loading && logs.length > 0 && (
+                <View style={styles.statsCard}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statValue}>{logs.length}</Text>
+                        <Text style={styles.statLabel}>Total Logs</Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                        <Text style={styles.statValue}>
+                            {logs.filter(l => new Date(l.timestamp) > new Date(Date.now() - 86400000)).length}
+                        </Text>
+                        <Text style={styles.statLabel}>Last 24h</Text>
+                    </View>
+                </View>
+            )}
 
             {/* Logs List */}
             <ScrollView
@@ -215,6 +250,13 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#1F2937',
     },
+    headerActions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    exportButton: {
+        padding: 4,
+    },
     refreshButton: {
         padding: 4,
     },
@@ -230,8 +272,37 @@ const styles = StyleSheet.create({
     },
     infoText: {
         flex: 1,
-        fontSize: 13,
+        fontSize: 12,
         color: '#1E40AF',
+    },
+    statsCard: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: 16,
+        marginTop: 12,
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    statItem: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#1F2937',
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginTop: 4,
+    },
+    statDivider: {
+        width: 1,
+        backgroundColor: '#E5E7EB',
+        marginHorizontal: 16,
     },
     scrollView: {
         flex: 1,

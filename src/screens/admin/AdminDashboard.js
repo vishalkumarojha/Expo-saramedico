@@ -13,13 +13,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import AdminBottomNavBar from '../../components/AdminBottomNavBar';
 import AdminSidebar from '../../components/AdminSidebar';
-import { authAPI } from '../../services/api';
+import { authAPI, adminAPI } from '../../services/api';
 
 export default function AdminDashboard({ navigation }) {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [adminName, setAdminName] = useState('Admin');
+  const [dashboardData, setDashboardData] = useState({
+    totalUsers: 0,
+    activeDoctors: 0,
+    pendingApprovals: 0,
+    recentActivity: []
+  });
 
   useEffect(() => {
     loadDashboard();
@@ -36,6 +42,20 @@ export default function AdminDashboard({ navigation }) {
         setAdminName(firstName || 'Admin');
       } catch (e) {
         console.log('Using default admin name');
+      }
+
+      // Load dashboard overview data
+      try {
+        const overviewRes = await adminAPI.getOverview();
+        setDashboardData({
+          totalUsers: overviewRes.data?.total_users || 0,
+          activeDoctors: overviewRes.data?.active_doctors || 0,
+          pendingApprovals: overviewRes.data?.pending_approvals || 0,
+          recentActivity: overviewRes.data?.recent_activity || []
+        });
+      } catch (e) {
+        console.log('Dashboard overview error:', e.message);
+        // Keep default values if API fails
       }
 
     } catch (error) {
@@ -161,13 +181,25 @@ export default function AdminDashboard({ navigation }) {
 
           {/* Alerts Section */}
           <Text style={styles.sectionTitle}>Recent Alerts</Text>
-          <View style={styles.alertCard}>
-            <View style={styles.alertHeader}>
-              <Ionicons name="alert-circle" size={20} color="#FF9800" />
-              <Text style={styles.alertTitle}>New Registration Pending</Text>
+          {dashboardData.pendingApprovals > 0 ? (
+            <View style={styles.alertCard}>
+              <View style={styles.alertHeader}>
+                <Ionicons name="alert-circle" size={20} color="#FF9800" />
+                <Text style={styles.alertTitle}>New Registration Pending</Text>
+              </View>
+              <Text style={styles.alertBody}>
+                {dashboardData.pendingApprovals} new doctor account{dashboardData.pendingApprovals !== 1 ? 's are' : ' is'} waiting for approval
+              </Text>
             </View>
-            <Text style={styles.alertBody}>3 new doctor accounts are waiting for approval</Text>
-          </View>
+          ) : (
+            <View style={styles.alertCard}>
+              <View style={styles.alertHeader}>
+                <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                <Text style={styles.alertTitle}>All Clear</Text>
+              </View>
+              <Text style={styles.alertBody}>No pending approvals at this time</Text>
+            </View>
+          )}
 
           {/* Recent Activity */}
           <View style={styles.sectionRow}>
@@ -178,9 +210,23 @@ export default function AdminDashboard({ navigation }) {
           </View>
 
           <View style={styles.card}>
-            <ActivityItem name="Dr. Arvind Shukla" time="20m ago" desc="Account approved" color="#90CAF9" icon="checkmark-circle" />
-            <ActivityItem name="City Hospital" time="2h ago" desc="New registration" color="#A5D6A7" icon="add-circle" />
-            <ActivityItem name="Dr. Avantika Gupta" time="6h ago" desc="Password reset" color="#CE93D8" icon="key" />
+            {dashboardData.recentActivity.length > 0 ? (
+              dashboardData.recentActivity.slice(0, 3).map((activity, index) => (
+                <ActivityItem
+                  key={index}
+                  name={activity.name || 'Unknown User'}
+                  time={activity.time || 'Recently'}
+                  desc={activity.description || 'Activity'}
+                  color={activity.color || '#90CAF9'}
+                  icon={activity.icon || 'information-circle'}
+                />
+              ))
+            ) : (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Ionicons name="time-outline" size={32} color="#ccc" />
+                <Text style={{ color: '#999', marginTop: 10, fontSize: 14 }}>No recent activity</Text>
+              </View>
+            )}
           </View>
 
 

@@ -308,6 +308,8 @@ export const appointmentAPI = {
 
 // ==================== ZOOM INTEGRATION ========================
 
+// ==================== AI INTEGRATION ========================
+
 export const aiAPI = {
   // POST /doctor/ai/contribute
   contributeToAI: (patientId, dataPayload, requestType = 'diagnosis_assist') =>
@@ -322,6 +324,29 @@ export const aiAPI = {
 
   // GET /doctor/ai/results/{queueId} (if implemented)
   getAIResult: (queueId) => api.get(`/doctor/ai/results/${queueId}`),
+};
+
+// ==================== AI CHAT API ========================
+
+export const aiChatAPI = {
+  // POST /api/v1/doctor/ai/chat/patient - Chat about a specific patient
+  chatAboutPatient: (patientId, message) => api.post('/doctor/ai/chat/patient', {
+    patient_id: patientId,
+    message: message
+  }),
+
+  // POST /api/v1/doctor/ai/chat/doctor - General AI chat for doctors
+  chatWithAI: (message) => api.post('/doctor/ai/chat/doctor', {
+    message: message
+  }),
+
+  // GET /api/v1/doctor/ai/chat-history/patient - Get patient-specific chat history
+  getPatientChatHistory: (patientId) => api.get('/doctor/ai/chat-history/patient', {
+    params: { patient_id: patientId }
+  }),
+
+  // GET /api/v1/doctor/ai/chat-history/doctor - Get doctor's general chat history
+  getDoctorChatHistory: () => api.get('/doctor/ai/chat-history/doctor'),
 };
 
 // ==================== ORGANIZATION & TEAM API ====================
@@ -363,6 +388,24 @@ export const teamAPI = {
   updateTeamMember: (id, data) => api.patch(`/team/members/${id}`, data),
 };
 
+// ==================== PERMISSIONS API ====================
+
+export const permissionsAPI = {
+  // POST /api/v1/permissions/grant-doctor-access - Grant doctor access to patient data
+  grantDoctorAccess: (data) => api.post('/permissions/grant-doctor-access', data),
+
+  // POST /api/v1/permissions/request - Request access to patient data
+  requestAccess: (data) => api.post('/permissions/request', data),
+
+  // DELETE /api/v1/permissions/revoke-doctor-access - Revoke doctor access
+  revokeDoctorAccess: (doctorId, patientId) => api.delete('/permissions/revoke-doctor-access', {
+    data: { doctor_id: doctorId, patient_id: patientId }
+  }),
+
+  // GET /api/v1/permissions/check - Check if user has permission
+  checkPermission: (params) => api.get('/permissions/check', { params }),
+};
+
 // ==================== AUDIT & COMPLIANCE API ====================
 
 export const auditAPI = {
@@ -371,6 +414,12 @@ export const auditAPI = {
 
   // GET /audit/logs/{id}
   getAuditLog: (id) => api.get(`/audit/logs/${id}`),
+
+  // GET /audit/export - Export audit logs
+  exportAuditLogs: (params) => api.get('/audit/export', { params }),
+
+  // GET /audit/stats - Get audit statistics
+  getAuditStats: () => api.get('/audit/stats'),
 
   // GET /compliance/access-logs
   getAccessLogs: (params) => api.get('/compliance/access-logs', { params }),
@@ -475,6 +524,12 @@ export const adminAPI = {
   // PATCH /api/v1/admin/settings/organization - Update Org Settings
   updateOrganizationSettings: (data) => api.patch('/admin/settings/organization', data),
 
+  // PATCH /api/v1/admin/settings/developer - Update Developer Settings
+  updateDeveloperSettings: (data) => api.patch('/admin/settings/developer', data),
+
+  // PATCH /api/v1/admin/settings/backup - Update Backup Settings
+  updateBackupSettings: (data) => api.patch('/admin/settings/backup', data),
+
   // GET /api/v1/admin/accounts - Get Account List
   getAccounts: (params) => api.get('/admin/accounts', { params }),
 
@@ -539,3 +594,6 @@ export const isAuthenticated = async () => {
 };
 
 export default api;
+
+// Export API_BASE_URL for use in OAuth flows
+export const API_BASE_URL = API_CONFIG.BASE_URL.replace('/api/v1', '');

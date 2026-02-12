@@ -9,16 +9,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
-  Keyboard
+  Keyboard,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/theme';
 import { CustomInput, CustomButton } from '../../components/CustomComponents';
+import * as WebBrowser from 'expo-web-browser';
 
-import { authAPI, storeTokens } from '../../services/api';
+import { authAPI, storeTokens, API_BASE_URL } from '../../services/api';
 import { Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Enable warm-up for better UX
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen({ navigation }) {
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'connected', 'error'
@@ -29,6 +34,24 @@ export default function LoginScreen({ navigation }) {
   // Check backend connection on mount
   React.useEffect(() => {
     checkConnection();
+
+    // Listen for deep links (OAuth callback)
+    const handleDeepLink = ({ url }) => {
+      handleGoogleCallback(url);
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Check if app was opened with a URL
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleGoogleCallback(url);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const checkConnection = async () => {
@@ -85,24 +108,65 @@ export default function LoginScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  const handleGoogleCallback = async (url) => {
+    try {
+      // Parse the URL to extract tokens
+      const urlObj = new URL(url);
+      const params = new URLSearchParams(urlObj.search);
+
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const userDataStr = params.get('user');
+
+      if (accessToken && refreshToken && userDataStr) {
+        const user = JSON.parse(decodeURIComponent(userDataStr));
+
+        // Store tokens and user data
+        await storeTokens(accessToken, refreshToken, user);
+
+        console.log('Google login successful for role:', user.role);
+
+        // Navigate based on user role
+        if (user.role === 'admin') {
+          navigation.replace('AdminFlow');
+        } else if (user.role === 'doctor') {
+          navigation.replace('DoctorFlow');
+        } else if (user.role === 'hospital') {
+          navigation.replace('HospitalFlow');
+        } else {
+          navigation.replace('PatientFlow');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling Google callback:', error);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
-      // TODO: Implement Google OAuth flow
-      // For now, show info message
-      Alert.alert(
-        'Google Login',
-        'Google OAuth integration requires:\n\n1. Google OAuth credentials in backend\n2. expo-auth-session or @react-native-google-signin/google-signin\n3. Backend endpoint: POST /api/v1/auth/google\n\nPlease configure these to enable Google login.',
-        [
-          {
-            text: 'OK',
-            onPress: () => console.log('Google login info acknowledged'),
-          },
-        ]
+
+      // Construct the Google login URL
+      const googleLoginUrl = `${API_BASE_URL}/api/v1/auth/google/login`;
+
+      console.log('Opening Google login:', googleLoginUrl);
+
+      // Open the browser for Google OAuth
+      const result = await WebBrowser.openAuthSessionAsync(
+        googleLoginUrl,
+        'exp://localhost:8081' // Expo development redirect URI
       );
+
+      if (result.type === 'success' && result.url) {
+        // Handle the callback URL
+        await handleGoogleCallback(result.url);
+      } else if (result.type === 'cancel') {
+        Alert.alert('Cancelled', 'Google sign-in was cancelled');
+      }
     } catch (error) {
       console.error('Google login error:', error);
-      Alert.alert('Error', 'Google login is not configured yet');
+      Alert.alert('Error', 'Failed to sign in with Google. Please try again.');
     } finally {
       setLoading(false);
     }

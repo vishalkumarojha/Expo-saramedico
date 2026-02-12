@@ -145,7 +145,7 @@ export default function DoctorDashboard({ navigation }) {
                <View style={styles.quickRow}>
                   <QuickActionItem icon="videocam" label="New Meet" color="#2196F3" bg="#E3F2FD" onPress={openNewMeet} />
                   <QuickActionItem icon="person-add" label="Add Patient" color="#2196F3" bg="#E3F2FD" onPress={openAddPatient} />
-                  <QuickActionItem icon="mic" label="Dictate Note" color="#2196F3" bg="#E3F2FD" onPress={() => { }} />
+                  <QuickActionItem icon="chatbubbles" label="AI Assistant" color="#9C27B0" bg="#F3E5F5" onPress={() => navigation.navigate('DoctorAIChatScreen')} />
                   <QuickActionItem icon="document-text" label="Upload Doc" color="#2196F3" bg="#E3F2FD" onPress={openUpload} />
                </View>
 

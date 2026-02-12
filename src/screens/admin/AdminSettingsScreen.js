@@ -204,6 +204,52 @@ export default function AdminSettingsScreen({ navigation }) {
                                 trackColor={{ false: "#E0E0E0", true: COLORS.primary }}
                             />
                         </View>
+
+                        <View style={styles.divider} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('AuditLogScreen')}
+                        >
+                            <Ionicons name="shield-checkmark-outline" size={22} color="#333" />
+                            <Text style={styles.menuText}>Audit Logs</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Admin Settings */}
+                    <Text style={styles.sectionTitle}>Admin Settings</Text>
+                    <View style={styles.card}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('AdminOrganizationSettingsScreen')}
+                        >
+                            <Ionicons name="business-outline" size={22} color="#333" />
+                            <Text style={styles.menuText}>Organization Settings</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+
+                        <View style={styles.divider} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('AdminDeveloperSettingsScreen')}
+                        >
+                            <Ionicons name="code-slash-outline" size={22} color="#333" />
+                            <Text style={styles.menuText}>Developer Settings</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
+
+                        <View style={styles.divider} />
+
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => navigation.navigate('AdminBackupSettingsScreen')}
+                        >
+                            <Ionicons name="cloud-upload-outline" size={22} color="#333" />
+                            <Text style={styles.menuText}>Backup Settings</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Support */}

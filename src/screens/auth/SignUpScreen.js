@@ -6,7 +6,8 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,8 +15,12 @@ import { COLORS } from '../../constants/theme';
 import { CustomInput, CustomButton } from '../../components/CustomComponents';
 import PhoneInput from '../../components/PhoneInput';
 import PasswordStrengthIndicator from '../../components/PasswordStrengthIndicator';
-import { authAPI, storeTokens } from '../../services/api';
+import * as WebBrowser from 'expo-web-browser';
+import { authAPI, storeTokens, API_BASE_URL } from '../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Enable warm-up for better UX
+WebBrowser.maybeCompleteAuthSession();
 
 const SPECIALTIES = [
   'Cardiology', 'Pediatrics', 'Dermatology', 'Orthopedics',
@@ -41,6 +46,27 @@ export default function SignUpScreen({ navigation }) {
 
   // Error states
   const [errors, setErrors] = useState({});
+
+  // Handle Google OAuth callback
+  React.useEffect(() => {
+    // Listen for deep links (OAuth callback)
+    const handleDeepLink = ({ url }) => {
+      handleGoogleCallback(url);
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+
+    // Check if app was opened with a URL
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleGoogleCallback(url);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   const handleSignUp = async () => {
     // Clear previous errors
@@ -190,6 +216,69 @@ export default function SignUpScreen({ navigation }) {
       }
 
       Alert.alert('Registration Failed', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleCallback = async (url) => {
+    try {
+      // Parse the URL to extract tokens
+      const urlObj = new URL(url);
+      const params = new URLSearchParams(urlObj.search);
+
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const userDataStr = params.get('user');
+
+      if (accessToken && refreshToken && userDataStr) {
+        const user = JSON.parse(decodeURIComponent(userDataStr));
+
+        // Store tokens and user data
+        await storeTokens(accessToken, refreshToken, user);
+
+        console.log('Google sign-up successful for role:', user.role);
+
+        // Navigate based on user role
+        if (user.role === 'admin') {
+          navigation.replace('AdminFlow');
+        } else if (user.role === 'doctor') {
+          navigation.replace('DoctorFlow');
+        } else if (user.role === 'hospital') {
+          navigation.replace('HospitalFlow');
+        } else {
+          navigation.replace('PatientFlow');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling Google callback:', error);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setLoading(true);
+
+      // Construct the Google login URL
+      const googleLoginUrl = `${API_BASE_URL}/api/v1/auth/google/login`;
+
+      console.log('Opening Google sign-up:', googleLoginUrl);
+
+      // Open the browser for Google OAuth
+      const result = await WebBrowser.openAuthSessionAsync(
+        googleLoginUrl,
+        'exp://localhost:8081' // Expo development redirect URI
+      );
+
+      if (result.type === 'success' && result.url) {
+        // Handle the callback URL
+        await handleGoogleCallback(result.url);
+      } else if (result.type === 'cancel') {
+        Alert.alert('Cancelled', 'Google sign-up was cancelled');
+      }
+    } catch (error) {
+      console.error('Google sign-up error:', error);
+      Alert.alert('Error', 'Failed to sign up with Google. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -467,6 +556,14 @@ export default function SignUpScreen({ navigation }) {
           disabled={loading}
         />
 
+        {/* Social Buttons */}
+        <View style={{ marginTop: 20 }}>
+          <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignUp}>
+            <Ionicons name="logo-google" size={22} color="black" />
+            <Text style={styles.socialBtnText}>Continue with Google</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading && <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />}
 
       </ScrollView>
@@ -582,4 +679,27 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   checkboxText: { fontSize: 13, color: '#666', flex: 1, lineHeight: 18 },
   linkText: { color: COLORS.primary, fontWeight: '600' },
+
+  // Social Buttons
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 55,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: 'white',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1
+  },
+  socialBtnText: {
+    marginLeft: 10,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333'
+  },
 });
