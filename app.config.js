@@ -4,7 +4,7 @@ export default {
     expo: {
         name: "Sara Medico",
         slug: "your-app",
-        version: "1.0.0",
+        version: "1.0.1",
         orientation: "portrait",
         icon: "./assets/icon.png",
         userInterfaceStyle: "light",
@@ -38,7 +38,8 @@ export default {
                     }
                 }
             ],
-            "./plugins/withAndroidAllowBackup"
+            "./plugins/withAndroidAllowBackup",
+            "./plugins/withAndroidCleartext"
         ]
     }
 };

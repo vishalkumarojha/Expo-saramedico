@@ -1,10 +1,11 @@
 const { withAndroidManifest } = require('expo/config-plugins');
 
 /**
- * Expo Config Plugin to set allowBackup attribute on Android.
+ * Expo Config Plugin to enable cleartext traffic on Android.
+ * This is required for connecting to HTTP APIs in production builds.
  * Uses tools:replace to override conflicts with libraries like Zoom SDK.
  */
-module.exports = function withAndroidAllowBackup(config) {
+module.exports = function withAndroidCleartext(config) {
     return withAndroidManifest(config, async (config) => {
         const androidManifest = config.modResults;
 
@@ -21,7 +22,7 @@ module.exports = function withAndroidAllowBackup(config) {
 
         // Handle tools:replace to avoid manifest merger conflicts
         const existingReplace = mainApplication.$['tools:replace'];
-        const attributeToReplace = 'android:allowBackup';
+        const attributeToReplace = 'android:usesCleartextTraffic';
 
         if (existingReplace) {
             if (!existingReplace.includes(attributeToReplace)) {
@@ -31,8 +32,8 @@ module.exports = function withAndroidAllowBackup(config) {
             mainApplication.$['tools:replace'] = attributeToReplace;
         }
 
-        // Set allowBackup to false to match Zoom SDK requirements
-        mainApplication.$['android:allowBackup'] = 'false';
+        // Enable cleartext traffic
+        mainApplication.$['android:usesCleartextTraffic'] = 'true';
 
         return config;
     });

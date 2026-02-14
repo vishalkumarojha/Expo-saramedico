@@ -192,10 +192,10 @@ The backend API documentation is available at:
 - **AWS**: http://65.0.98.170:8000/docs
 - **Local**: http://localhost:8000/docs (when running locally)
 
-## Notes
+### Issue: Login fails in production APK but works in development
 
-- Environment variables are read at app startup
-- Changes to `.env` require restarting the Expo server
-- The app uses `/api/v1` suffix automatically
-- All API calls include authentication tokens when available
-- Console logs help verify which API endpoint is active
+**Reason**: Android blocks HTTP (cleartext) traffic by default in production.
+**Solution**: 
+1. The app has been configured with `withAndroidCleartext` Expo plugin (in `app.config.js`) to allow cleartext traffic.
+2. Ensure you rebuild the APK using `npx expo prebuild` or `eas build` to apply these configuration changes.
+3. For best security, it is highly recommended to migrate the AWS API to HTTPS (port 443).
